@@ -31,7 +31,7 @@ __status__ = "Development"
 
 def parse_arguments():
     global args
-    parser = argparse.ArgumentParser(description='Generate ART read profiles from Illumina InterOp data sets. '\
+    parser = argparse.ArgumentParser(description='Generates ART read profiles from Illumina InterOp data sets. '\
                                      'Also creates linegraphs of quality profiles.')
     parser.add_argument('-p', '--profiles', action='store_true', help='only generate ART read profiles')
     parser.add_argument('-g', '--graphs', action='store_true', help='only generate line graphs of quality profiles')

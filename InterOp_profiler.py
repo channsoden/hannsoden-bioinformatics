@@ -45,6 +45,7 @@ def parse_arguments():
         sys.exit('Options -p and -g are incompatible with one another. Both profiles and graphs are produced by default.')
 
 def main(interopDirs):
+    interopDirs = pathsep_check(interopDirs)
     check_for_required_files(interopDirs)
     interOp_data = {path: interop_quals(path) for path in interopDirs}
 
@@ -68,6 +69,15 @@ def main(interopDirs):
                 art_profile(interop[1], path+path[:-1]+'_R2.profile')
             else:
                 art_profile(interop[0], path+path[:-1]+'.profile')
+
+def pathsep_check(dirList):
+    # Checks to make sure the directories all end with the path seperator ('/' in Unix)
+    # Add the path seperator if it's missing.
+    # The seperator will be missing when unix wildcards are used.
+    for i, directory in enumerate(dirList):
+        if not directory.endswith(os.path.sep):
+            dirList[i] = directory + os.path.sep
+    return dirList
 
 def data_present(path):
     # Should make sure InterOp/ and RunInfo.xml are present, and that QMetricsOut.bin is under InterOp/

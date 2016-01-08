@@ -12,18 +12,20 @@ QMetricsOut.bin for a different Illumina sequencing run.
 """
 import sys
 import os
+import struct
 import argparse
 import pickle
+import xml.etree.ElementTree as ET
+import numpy as np
 import matplotlib
 matplotlib.use('Agg')
 from matplotlib import pyplot as plt
-from illuminate import InteropDataset
 
 __author__ = "Christopher Hann-Soden"
 __copyright__ = "Copyright 2015, Christopher Hann-Soden"
 __credits__ = ["Christopher Hann-Soden"]
 __licence__ = "GPL"
-__version__ = "0.9"
+__version__ = "0.91"
 __maintainer__ = "Christopher Hann-Soden"
 __email__ = "channsoden@berkeley.edu"
 __status__ = "Development"
@@ -35,8 +37,7 @@ def parse_arguments():
                                      'Also creates linegraphs of quality profiles.')
     parser.add_argument('-p', '--profiles', action='store_true', help='only generate ART read profiles')
     parser.add_argument('-g', '--graphs', action='store_true', help='only generate line graphs of quality profiles')
-    parser.add_argument('-f', '--forcerestart', action='store_true', help='forces reparsing of InterOp dataset')
-    parser.add_argument('interopDirs', metavar='dir', type=str, nargs='+', help='the list of input directories')
+    parser.add_argument('interopDirs', metavar='dirs', type=str, nargs='+', help='the list of input directories')
     parser.add_argument('-N', '--percentile', type=int, default=10, help='Nth percentile of quality scores to plot in the line graph')
     args = parser.parse_args()
 
@@ -45,22 +46,16 @@ def parse_arguments():
 
 def main(interopDirs):
     check_for_required_files(interopDirs)
-    interOp_data = {path: parse_interop_quals(path) for path in interopDirs}
+    interOp_data = {path: interop_quals(path) for path in interopDirs}
 
     if not args.profiles:
         # Calculate the mean and 10th percentile Q-scores at each cycle, then plot them in a line graph.
         lineseries_R1 = {}
         lineseries_R2 = {}
         for path, interop in interOp_data.items():
-            qualdists, readlength, PE = interop
-            if PE:
-                qualdists_R1, qualdists_R2 = split_reads_interop_distribution(qualdists, readlength)
-                lineseries_R1[path] = interop_meanNth_Q_by_position(qualdists_R1, args.percentile)
-                lineseries_R2[path] = interop_meanNth_Q_by_position(qualdists_R2, args.percentile)
-            else:
-                qualdists = qualdists[:readlength]
-                lineseries_R1[path] = interop_meanNth_Q_by_position(qualdists, args.percentile)
-        #lineseries = {path: interop_meanNth_Q_by_position(interOp_data[path][0], 10) for path in interopDirs}
+            lineseries_R1[path] = interop_meanNth_Q_by_position(interop[0], args.percentile)
+            if len(interop) == 2:
+                lineseries_R2[path] = interop_meanNth_Q_by_position(interop[1], args.percentile)
         linegraph(lineseries_R1, 'InterOp_quality_profile_R1.pdf')
         if lineseries_R2:
             linegraph(lineseries_R2, 'InterOp_quality_profile_R2.pdf')
@@ -68,14 +63,11 @@ def main(interopDirs):
     if not args.graphs:
         # Generate ART read profiles for each InterOp dataset.
         for path, interop in interOp_data.items():
-            qualdists, readlength, PE = interop
-            if PE:
-                qualdists_R1, qualdists_R2 = split_reads_interop_distribution(qualdists, readlength)
-                art_profile(qualdists_R1, path+path[:-1]+'_R1.profile')
-                art_profile(qualdists_R2, path+path[:-1]+'_R2.profile')
+            if len(interop) == 2:
+                art_profile(interop[0], path+path[:-1]+'_R1.profile')
+                art_profile(interop[1], path+path[:-1]+'_R2.profile')
             else:
-                qualdists = qualdists[:readlength]
-                art_profile(qualdists, path+path[:-1]+'.profile')
+                art_profile(interop[0], path+path[:-1]+'.profile')
 
 def data_present(path):
     # Should make sure InterOp/ and RunInfo.xml are present, and that QMetricsOut.bin is under InterOp/
@@ -93,38 +85,84 @@ def check_for_required_files(directories):
         sys.stderr.write('Please make sure all input directories contain these required files.')
         sys.exit(1)
 
-def parse_interop_quals(path):
-    # Parses InterOp binary dataset, returns an ordered list of histogram-like distributions of quality scores for each cycle of the run.
-    if (os.path.isfile(path+'qualdists.pickle') and os.path.isfile(path+'readlength.pickle') and
-        os.path.isfile(path+'PE.pickle') and not args.forcerestart):
-        qualdists = pickle.load(open(path+'qualdists.pickle', 'r'))
-        readlength = pickle.load(open(path+'readlength.pickle', 'r'))
-        PE = pickle.load(open(path+'PE.pickle', 'r'))
+def get_cycleinfo(RI_file):
+    # Returns the total number of cycles in the run, the readlength, and a list containing the starting cycle numbers for the reads.
+    tree = ET.parse(RI_file)
+    root = tree.getroot()
+    reads = root.iter('Read')
+    
+    cycles = 0
+    read_idxs = []
+    for read in reads:
+        NumCycles = int(read.attrib['NumCycles'])
+        if read.attrib['IsIndexedRead'] == 'N':
+            readlength = NumCycles
+            read_idxs.append(cycles)
+        cycles += NumCycles
+
+    return cycles, readlength, read_idxs
+
+def parse_QMetrics(QM_file, cycles):
+    # Returns distributions of quality scores by cycle number
+    qmfh = open(QM_file)
+
+    file_version, record_length, binning = struct.unpack('BBB', qmfh.read(3))
+
+    if not file_version in [5, 6]:
+        sys.exit('This QMetricsOut.bin is version {}.\nOnly versions 5 and 6 are supported.'.format(file_version))
+    
+    if binning:
+        bins = struct.unpack('B', qmfh.read(1))[0]
+        lower_bounds = list(struct.unpack('B'*bins, qmfh.read(bins)))
+        upper_bounds = list(struct.unpack('B'*bins, qmfh.read(bins)))
+        remapped_scores = list(struct.unpack('B'*bins, qmfh.read(bins)))
     else:
-        myDataset = InteropDataset(path)
-        qualitymetrics = myDataset.QualityMetrics()
+        bins = 50
+        lower_bounds = range(1,50)
+        upper_bounds = range(1,50)
+        remapped_scores = range(1,51)
 
-        readlength = qualitymetrics.read_tiers[0]
-        PE = len(qualitymetrics.read_tiers) == 3
-        
-        cycles = set(qualitymetrics.df.cycle)
-        # Make an ordered list containing the frequency distribution of quality scores for each cycle
-        qualdists = []
-        for cycle in cycles:
-            qualdist = dict(qualitymetrics.df[(qualitymetrics.df.cycle == cycle)].sum()[:-3])
-            qualdist = {int(key.strip('q')):value for key, value in qualdist.items()}
-            qualdists.append(qualdist)
-        pickle.dump(qualdists, open(path+'qualdists.pickle', 'w'))
-        pickle.dump(readlength, open(path+'readlength.pickle', 'w'))
-        pickle.dump(PE, open(path+'PE.pickle', 'w'))
+    Qdist = [np.zeros(bins) for x in range(cycles)]
 
-    return (qualdists, readlength, PE)
+    record = qmfh.read(record_length)
+    while record:
+        lane, tile, cycle = struct.unpack('HHH', record[:6])
 
-def split_reads_interop_distribution(qualdists, readlength):
-    # For paired end run only.
-    # Returns two qualdists corresponding to the first and second reads.
-    # The index is read in between R1 and R2, so this is the first N and last N cycles.
-    return qualdists[:readlength], qualdists[-readlength:]
+        if file_version == 5:
+            Qscore_counts = struct.unpack('I'*50, record[6:])
+            binned_counts = np.array([Qscore_counts[score-1] for score in remapped_scores])
+        elif file_version == 6:
+            binned_counts = np.array(struct.unpack('i'*bins, record[6:]))
+
+        Qdist[cycle-1] += binned_counts
+
+        record = qmfh.read(record_length)
+
+    for i, dist in enumerate(Qdist):
+        if list(dist) == [0] * bins:
+            # There exists a cycle for which no quality scores are recorded. This isn't right.
+            print 'cycle', i+1
+            sys.exit('Invalid Data: The file {} is missing data for cycle {} - aborting.'.format(QM_file, i+1))
+
+    # Set the remapped scores as keys for the bins
+    # Qdist[4][2] is the second bin in cycle 4
+    # if remapped_scores == [7, 12, 17, 22, 27, 32, 37, 41]
+    # then the second bin represents the counts of Q-score == 12
+    Qdist = [dict(zip(remapped_scores, dist)) for dist in Qdist]
+
+    return Qdist
+
+def interop_quals(path):
+    # Parses InterOp binary dataset, returns an ordered list of histogram-like distributions of quality scores for each cycle of the run.
+    cycles, readlength, read_starts = get_cycleinfo(path+'RunInfo.xml')
+ 
+    # Make an ordered list containing the frequency distribution of quality scores for each cycle
+    qualdists = parse_QMetrics(path+'InterOp/QMetricsOut.bin', cycles)
+
+    # Seperate out the reads
+    read_qualdists = [qualdists[start:start+readlength] for start in read_starts]
+
+    return read_qualdists
 
 def interop_meanNth_Q_by_position(qualdists, N):
     # Return an ordered list of the mean and Nth percentile Q-scores for each cycle in an Illumina run from an InterOp dataset.

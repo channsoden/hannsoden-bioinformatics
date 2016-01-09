@@ -132,7 +132,7 @@ def parse_QMetrics(QM_file, cycles):
         upper_bounds = range(1,50)
         remapped_scores = range(1,51)
 
-    Qdist = [np.zeros(bins) for x in range(cycles)]
+    Qdist = [np.zeros(bins, dtype=int) for x in range(cycles)]
 
     record = qmfh.read(record_length)
     while record:

@@ -20,13 +20,10 @@ def get_scaffold_lengths(fastafile):
     return d
 
 def fasta_to_dict(fastafile):
-    fh = open(fastafile, 'r')
-    d = {}
-    for line in fh:
-        line = line.strip()
-        if line[0] == '>':
-            seqname = line[1:]
-            d[seqname] = ''
-        else:
-            d[seqname] += line
-    return d
+    data = open(fastafile, 'r').read()
+
+    genes = data[1:].split('>')
+    genes = [gene.split('\n', 1) for gene in genes]
+    genes = {gene[0] : gene[1].replace('\n', '') for gene in genes}
+
+    return genes

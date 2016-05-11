@@ -12,7 +12,12 @@ class gff_feature:
         except ValueError:
             self.score = None
         self.strand, self.frame = fields[6:8]
-        self.attributes = {atr:val for atr, val in [couple.split('=') for couple in fields[8].split(';')]}
+        try:
+            # atr=val format
+            self.attributes = {atr:val for atr, val in [couple.split('=') for couple in fields[8].split(';')]}
+        except ValueError:
+            # atr "val" format, as produced by cufflinks
+            self.attributes = {atr:val.strip('"') for atr, val in [couple.split() for couple in fields[8].split(';')]}
 
 def parse_gff(gffFile):
     gffFH = open(gffFile, 'r')

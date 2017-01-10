@@ -87,13 +87,14 @@ class alignment:
         self.delta = delta
 
         self.rLen = rEnd - rStart
-        self.qLen = qEnd - qStart
+        self.qLen = abs(qEnd - qStart)
 
         self.deletions = len([digit for digit in delta if digit < 0])
         self.insertions = len([digit for digit in delta if digit > 0])
         self.aLen = self.rLen + self.deletions
 
         if qStart < qEnd: # Should rStart < rEnd, since it's the reference.
+            # Same orientation is defined as True
             self.orientation = True
         else:
             self.orientation = False

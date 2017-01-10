@@ -1,6 +1,8 @@
 #!/usr/bin/env python
 
-# submit("echo hello world", job_name='test', modules=['python', 'java', 'g++'])
+# from SLURM_tools import submit, job_wait
+# JID = submit("echo hello world", job_name='test', modules=['python', 'java', 'g++'])
+# job_wait(JID, period = 15, verbose = False)
 
 import subprocess as sp
 import time, sys

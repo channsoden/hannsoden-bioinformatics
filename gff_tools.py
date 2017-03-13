@@ -6,7 +6,7 @@ class gff_feature:
     def __init__(self, gff_feature_line):
         fields = gff_feature_line.strip().strip(';').split('\t')
         self.seqname, self.source, self.feature = fields[:3]
-        self.start, self.end = map(int, fields[3:5])
+        self.start, self.end = (int(x) for x in fields[3:5])
         try:
             self.score = int(fields[5])
         except ValueError:

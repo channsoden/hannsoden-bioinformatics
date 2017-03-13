@@ -1,6 +1,4 @@
 #!/usr/bin/env python
-from matplotlib import pyplot as plt
-import numpy as np
 
 # From http://colorbrewer2.org/
 brewer = ['#a6cee3',
@@ -15,11 +13,6 @@ brewer = ['#a6cee3',
           '#6a3d9a',
           '#ffff99',
           '#b15928']
-
-gioti = {'red': '#EF2636',
-         'blue': '#3972C2',
-         'green': '#2CE16C',
-         'purple': '#944C7D'}
 
 def minimal(ax):
     #ax.set_axis_off() is better for everything
@@ -36,7 +29,7 @@ def minimal(ax):
 
 def spine_size(ax, size):
     [i.set_linewidth(size) for i in ax.spines.itervalues()]
-    ax.tick_params(axis='both', which='both', labelsize=size*5)
+    ax.tick_params(axis='both', which='both', labelsize=size*4)
     
 def scientific(ax, y=True, x=True):
     if y and not x:
@@ -48,25 +41,9 @@ def scientific(ax, y=True, x=True):
     else:
         pass
 
-def line_text(ax, c1, c2, s,
-              size=12, color='black', linewidth='2', va='bottom',
-              clip=True):
+def line_text(ax, c1, c2, s, size=12, color='black', linewidth='2'):
     x1, y1 = c1
     x2, y2 = c2
 
-    ax.text((x1+x2)/2., (y1+y2)/2., s, size=size, ha='center', va=va)
-    line = plt.Line2D([x1, x2], [y1, y2], color=color, linewidth=linewidth)
-    line.set_clip_on(clip)
-    ax.add_line(line)
-    #ax.plot()
-
-def color_legend(ax, labels, colors, position='upper right'):
-    import matplotlib.patches as mpatches
-    
-    handles = [mpatches.Patch(color=c, label=l) for l, c in zip(labels, colors)]
-    ax.legend(handles=handles, loc=position, frameon=False)
-
-def color_scale(value, max_color=np.array([0., 0., 0.]), min_color=np.array([1., 1., 1.])):
-    dif = max_color - min_color
-    color = min_color + value * dif
-    return color
+    ax.text((x1+x2)/2., (y1+y2)/2., s, size=size, ha='center', va='bottom')
+    ax.plot([x1, x2], [y1, y2], color=color, linewidth=linewidth)

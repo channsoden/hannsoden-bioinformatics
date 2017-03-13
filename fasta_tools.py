@@ -50,3 +50,19 @@ def fasta_to_dict(fastafile):
         raise
 
     return genes
+
+def wrap_fasta(fasta_file, out_file = '', N = 80):
+    if not out_file:
+        out_file = fasta_file + '.wrapped'
+
+    fh = open(fasta_file, 'r')
+    out = open(out_file, 'w')
+
+    for line in fh:
+        if line.startswith('>'):
+            out.write(line)
+        else:
+            line = line.strip()
+            for i in range(0, len(line), N):
+                out.write(line[i: i+N])
+                out.write('\n')

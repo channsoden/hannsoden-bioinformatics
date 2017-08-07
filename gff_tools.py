@@ -12,6 +12,7 @@ class gff_feature:
         except ValueError:
             self.score = None
         self.strand, self.frame = fields[6:8]
+        fields[8] = fields[8].split('#')[0].strip(';') # remove comments
         try:
             # atr=val format
             self.attributes = {atr:val for atr, val in [couple.split('=') for couple in fields[8].split(';')]}

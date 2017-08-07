@@ -1,12 +1,14 @@
 #!/usr/bin/env python
 import subprocess as sp
 
-def get_absolute_positions(fastafile):
-    """Opens and reads a fasta formated genome and returns a dictionary suitable for use in parse_mummer_coords()."""
+def get_absolute_positions(fastafile, base=0):
+    """Reads a fasta file and returns a dictionary containing the start positions
+    of each sequence if they were concatenated together in order.
+    Uses 0-based indexing by default."""
     from Bio import SeqIO
     records = SeqIO.parse(open(fastafile, 'r'), 'fasta')
     d = {}
-    genomelength = 0
+    genomelength = base
     for rec in records:
         d[rec.name] = genomelength
         genomelength += len(rec.seq)
@@ -15,10 +17,8 @@ def get_absolute_positions(fastafile):
 
 def get_scaffold_lengths(fastafile):
     """Opens and reads a fasta formated genome and returns a dictionary with sequence names as keys and the length of the sequence as values."""
-    from Bio import SeqIO
-    records = SeqIO.parse(open(fastafile, 'r'), 'fasta')
-    d = SeqIO.to_dict(records)
-    d = {key: len(rec.seq) for key, rec in d.items()}
+    records = fasta_to_dict(fastafile)
+    d = {key: len(rec) for key, rec in records.items()}
     return d
 
 def seq_length_list(fastafile):
@@ -32,6 +32,7 @@ def seq_length_list(fastafile):
     return lengths
 
 def total_length(fastafile):
+    """Returns the total length of sequences in a fasta file."""
     grep = sp.Popen(['grep', '-v', '">"', fastafile], stdout=sp.PIPE)
     wc = sp.Popen(['wc'], stdin=grep.stdout, stdout=sp.PIPE)
     out, err = wc.communicate()
@@ -39,6 +40,7 @@ def total_length(fastafile):
     return characters - lines
 
 def fasta_to_dict(fastafile):
+    """Very fast, but memory inefficient, function to return a dictionary of all sequences in the fasta file."""
     data = open(fastafile, 'r').read()
 
     genes = data[1:].split('>')
@@ -52,6 +54,7 @@ def fasta_to_dict(fastafile):
     return genes
 
 def wrap_fasta(fasta_file, out_file = '', N = 80):
+    """Wraps long sequences and writes the reformatted file back to [fasta_file].wrapped."""
     if not out_file:
         out_file = fasta_file + '.wrapped'
 

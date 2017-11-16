@@ -22,10 +22,10 @@ def submit(job,
            time = '48:0:0',
            error = '', 
            output = '', 
-           nodes = '1',
-           tasks_per_node = '1',
-           cpus_per_task = '20',
-           mem_per_cpu = '3000', 
+           nodes = 1,
+           tasks_per_node = 1,
+           cpus_per_task = 20,
+           mem_per_cpu = 3000, 
            mail_type = 'FAIL',
            mail_user = 'channsoden@berkeley.edu',
            shell = 'bash',
@@ -74,7 +74,7 @@ def submit(job,
         module_functions = set(module_functions)
         for module, func in module_functions:
             script.append('from {} import {}\n'.format(module, func))
-        script.append('mapPool({}, {})'.format(cpus_per_task, job))
+        script.append('mapPool({}, {}, daemonic=True)'.format(cpus_per_task, job))
 
         temp_script = tempfile.NamedTemporaryFile(prefix = job_name+'_pool', dir='.', delete=False)
         temp_script.writelines(script)

@@ -3,9 +3,14 @@ from matplotlib import pyplot as plt
 import numpy as np
 
 # From http://colorbrewer2.org/
-brewer = ['#a6cee3', '#1f78b4', '#b2df8a', '#33a02c',
-          '#fb9a99', '#e31a1c', '#fdbf6f', '#ff7f00',
-          '#cab2d6', '#6a3d9a', '#ffff99', '#b15928']
+# Cynthia Brewer, Mark Harrower and The Pennsylvania State University
+brewer_paired = ['#a6cee3', '#1f78b4', '#b2df8a', '#33a02c',
+                 '#fb9a99', '#e31a1c', '#fdbf6f', '#ff7f00',
+                 '#cab2d6', '#6a3d9a', '#ffff99', '#b15928']
+brewer = ['#8dd3c7', '#ffffb3', '#bebada', '#fb8072',
+          '#80b1d3', '#fdb462', '#b3de69', '#fccde5',
+          '#d9d9d9', '#bc80bd', '#ccebc5', '#ffed6f']
+brewer_colorblind = ['#1f78b4', '#33a02c', '#a6cee3', '#b2df8a']
 
 gioti = {'red': '#EF2636',
          'blue': '#3972C2',
@@ -38,6 +43,15 @@ def minimal(ax, labels=False, ticks=False):
         ax.xaxis.set_visible(False)
         ax.yaxis.set_visible(False)
 
+def simple_axis(ax):
+    # Hide the right and top spines
+    ax.spines['right'].set_visible(False)
+    ax.spines['top'].set_visible(False)
+
+    # Only show ticks on the left and bottom spines
+    ax.yaxis.set_ticks_position('left')
+    ax.xaxis.set_ticks_position('bottom')
+
 def spine_size(ax, size):
     [i.set_linewidth(size) for i in ax.spines.itervalues()]
     ax.tick_params(axis='both', which='both', labelsize=size*5)
@@ -51,6 +65,14 @@ def scientific(ax, y=True, x=True):
         ax.ticklabel_format(style='sci',scilimits=(-2,2),axis='both')
     else:
         pass
+
+def percent_labels(ax, y=True, x=False):
+    if y:
+        vals = ax.get_yticks()
+        ax.set_yticklabels(['{:3.0f}%'.format(y*100) for y in vals])
+    if x:
+        vals = ax.get_xticks()
+        ax.set_xticklabels(['{:3.0f}%'.format(x*100) for x in vals])
 
 def line_text(ax, c1, c2, s,
               size=12, color='black', linewidth='2', va='bottom',
@@ -97,3 +119,9 @@ def hex_to_rgb(hex_color):
     g = int(hex_color[2:4], 16)
     b = int(hex_color[4:6], 16)
     return r, g, b
+
+def figure_add_alpha(previous, target):
+    # calculate the alpha value to acheive target level
+    # when layered upon previous alpha value
+    actual = (target - previous) / (1 - previous)
+    return actual

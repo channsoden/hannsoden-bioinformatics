@@ -66,7 +66,6 @@ def traverse_between(A, B, include_ancestor=True):
         between = ascending + descending
     return between
         
-        
 if __name__ == '__main__':
     from genome_datasets import summer2016_neurospora
     

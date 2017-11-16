@@ -48,8 +48,7 @@ def fasta_to_dict(fastafile):
     try:
         genes = {gene[0] : gene[1].replace('\n', '') for gene in genes}
     except IndexError:
-        print fastafile
-        raise
+        raise ValueError('Empty or malformed sequences in {}'.format(fastafile))
 
     return genes
 

@@ -11,10 +11,15 @@ results = mapPool(threads, calls)
 """
 import sys, traceback
 from multiprocessing import Pool
+from multiprocessing.pool import ThreadPool
 
-def mapPool(threads, args):
+def mapPool(threads, args, daemonic=False):
     # args = [(function, (arg1, arg2), {keyword1:arg1, keyword2:arg2}), nextjob, ...]
-    p = Pool(threads)
+    if daemonic:
+        p = Pool(threads)
+    else:
+        p = ThreadPool(processes=threads)
+
     output = p.map(star_func, args)
     p.close()
     p.join()

@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # Standard modules
-import os, sys, random, argparse, time, itertools, pickle
+import sys, random, argparse, time, itertools, pickle
 from argparse import Namespace
 
 # Nonstandard modules
@@ -14,7 +14,6 @@ from fasta_tools import get_scaffold_lengths
 from fasta_counter import N50
 from WholeGenomePhylogeny import main as wgp_main
 from WGP2_multiple_alignment import shorten_name
-from WGP6_cleanup import cleanup as wgp_cleanup
 
 def parse_args():
     parser = argparse.ArgumentParser(description='Generates a whole genome maximum likelihood phylogeny from a list of fasta genomes.')
@@ -146,10 +145,6 @@ def compare(group, output_suffix):
     if not tree_file:
         # Making the tree failed. Abandon this comparison.
         log.write( 'phylogeny of {} failed\n'.format(short_group) )
-        try:
-            wgp_cleanup(None)
-        except:
-            pass
         return group
     tree = Tree(tree_file)
 
@@ -184,21 +179,15 @@ def compare(group, output_suffix):
     return clusters
 
 def wgp(genomes, reference, output_suffix):
-    cwd = os.getcwd()
     output_name = 'phylogeny{}.{}'.format(effort, output_suffix)
     wgp_args = Namespace(reference = reference,
                          step = 1,
                          seed = args.seed,
                          output = output_name,
                          dataset = '',
-                         genomes = genomes)
-    try: 
-        tree_file = wgp_main(wgp_args)
-    except IndexError:
-        # Probably, these genomes were too divergent to align well, and no alignment was made.
-        # Just try again with a different group.
-        tree_file = 0
-    os.chdir(cwd) # in case wgp_main bugged out and left us in a different directory
+                         genomes = genomes,
+                         bootstrap = False)
+    tree_file = wgp_main(wgp_args)
     return tree_file
 
 def split_tree(tree):

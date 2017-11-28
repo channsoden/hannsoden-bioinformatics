@@ -16,22 +16,31 @@ from SLURM_tools import job_wait
 
 def multiple_alignment(args, fastas):
     basedir = os.getcwd()
+    alignment = basedir+'/2_alignment/'+args.output+'.fasta'
     os.chdir('2_alignment')
-
+    
     unaligned_fastas = [fasta for fasta in fastas if not os.path.isfile(trim_name(fasta))]
     if unaligned_fastas:
         chunk_size = (len(unaligned_fastas) / 4) + 1
-        chunks = [fastas[i:i+chunk_size] for i in [n * chunk_size for n in range(4)]]
+        chunks = [unaligned_fastas[i:i+chunk_size] for i in [n * chunk_size for n in range(4)]]
         # Run this script with list of fastas as args
         jobs = [(submit_alignment_batch, ['{} {} {}'.format(sys.executable, __file__, ' '.join(chunk))])
                 for chunk in chunks]
-        mapPool(4, jobs)
+        IDs = mapPool(4, jobs)
+        outfiles = ['mafft_'+str(ID)+'.out' for ID in IDs]
+        errfiles = ['mafft_'+str(ID)+'.err' for ID in IDs]
+    else:
+        outfiles = []
+        errfiles = []
 
+    aligned = [align_name(fasta) for fasta in fastas] # Intermediate files from the alignment process.
     aligned_trimmed = [trim_name(fasta) for fasta in fastas] # The output files from the aligment process.
-    alignment = concatenate_fasta(aligned_trimmed, args.output)
+    concatenate_fasta(aligned_trimmed, alignment)
+
+    cleanup(logs=outfiles+errfiles, trash=fastas+aligned+aligned_trimmed)
 
     os.chdir(basedir)
-    return basedir+'/2_alignment/'+alignment
+    return alignment
 
 def submit_alignment_batch(job):
     ID = submit(job,
@@ -44,6 +53,7 @@ def submit_alignment_batch(job):
                 mem_per_cpu = '3000')
                 #modules = ['biopython/1.64-2.7.8'])
     job_wait(ID)
+    return ID
 
 def align_trim(fasta):
     aligned = align_name(fasta)
@@ -103,7 +113,7 @@ def has_started(boolArray, pos):
 def has_ended(boolArray, pos):
     return not boolArray.iloc[:,pos:].any(axis=1).all()
 
-def concatenate_fasta(faAlignments, out_name):
+def concatenate_fasta(faAlignments, outfile):
     """Concatenates a list of fasta-formated alignment files."""
     for fa in faAlignments:
         try:
@@ -123,7 +133,7 @@ def concatenate_fasta(faAlignments, out_name):
             seqs = fasta_tools.fasta_to_dict(fa)
             [concatenated[name.split()[-1].split(':')[0]].append(seq)
              for name, seq in seqs.items()]
-        except ParserError.ParserError:
+        except fasta_tools.ParserError:
             bad_files += 1    
 
     if bad_files:
@@ -132,7 +142,6 @@ def concatenate_fasta(faAlignments, out_name):
     # Abbreviate thxe sequence names and join all the sequences into a single long string.
     concatenated = {shorten_name(name): ''.join(seqs) for name, seqs in concatenated.items()}
 
-    outfile = out_name+'.fasta'
     fh = open(outfile, 'w')
     for name, seq in concatenated.items():
         fh.write('>'+name+'\n')
@@ -154,7 +163,14 @@ def RAxML_valid(seqlist):
             return True
     return False
 
+def cleanup(logs=[], trash=[]):
+    if logs and not os.path.isdir('logs'):
+        os.mkdir('logs')
+    [os.rename(log, 'logs/'+log) for log in logs]
+    [os.remove(f) for f in trash]
+
 if __name__ == '__main__':
     fastas = sys.argv[1:]
+
     calls = [(align_trim, [fasta]) for fasta in fastas]
     nones = mapPool(20, calls)

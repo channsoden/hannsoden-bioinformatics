@@ -13,7 +13,6 @@ from SLURM_tools import submit, job_wait
 from fasta_tools import fasta_to_dict
 from WGP3_partition import partition
 from WGP4_phylogeny import phylogeny
-from WGP6_cleanup import cleanup
 
 def bootstrap(args, alignment, tree, reps = 100):
     bs_args = range_args(args, reps)
@@ -31,8 +30,6 @@ def bootstrap(args, alignment, tree, reps = 100):
     bs_trees = get_trees(bs_args)
 
     bs_tree = map_support(tree, bs_trees)
-
-    [cleanup(args) for args in bs_args]
 
     return bs_tree
 

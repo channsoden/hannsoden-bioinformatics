@@ -1,6 +1,9 @@
 #!/usr/bin/env python
 import subprocess as sp
 
+class ParserError(Exception):
+    pass
+
 def get_absolute_positions(fastafile, base=0):
     """Reads a fasta file and returns a dictionary containing the start positions
     of each sequence if they were concatenated together in order.
@@ -48,7 +51,7 @@ def fasta_to_dict(fastafile):
     try:
         genes = {gene[0] : gene[1].replace('\n', '') for gene in genes}
     except IndexError:
-        raise ValueError('Empty or malformed sequences in {}'.format(fastafile))
+        raise ParserError('Empty or malformed sequences in {}'.format(fastafile))
 
     return genes
 

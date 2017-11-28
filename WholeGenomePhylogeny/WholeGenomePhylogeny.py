@@ -21,7 +21,7 @@ Using the Anaconda2 distribution of Python is highly recommended. PartitionFinde
 Requires the following modules on the BRC HPC: raxml/8.1.17 gcc/4.8.5 openmpi/1.10.2-gcc
 """
 # Standard modules
-import argparse, sys, time, pickle
+import argparse, os, sys, time, pickle
 import subprocess as sp
 
 # Nonstandard modules
@@ -33,7 +33,6 @@ from WGP2_multiple_alignment import multiple_alignment
 from WGP3_partition import partition
 from WGP4_phylogeny import phylogeny
 from WGP5_bootstrap import bootstrap
-from WGP6_cleanup import cleanup
 
 __author__ = "Christopher Hann-Soden"
 __copyright__ = "Copyright 2016, Christopher Hann-Soden"
@@ -80,7 +79,11 @@ def main(args):
     if args.step == 1:
         print 'Began orthology search'
         seg_files = orthology(args)
+        if not seg_files:
+            # Orthology search must have failed
+            return None
         print 'Finished orthology search'
+        os.remove('1_orthology/'+args.output+'.uni_shared_ref.pickle')
         args.step += 1
 
     if args.step == 2:
@@ -108,14 +111,10 @@ def main(args):
             bs_tree = tree
         args.step += 1
         
-    if args.step == 6:
-        print 'Began cleanup'
-        cleanup(args)
-        print 'Finished cleanup'
-        
     print 'Completed whole genome phylogenetic analysis.'
+    os.remove(args.output+'.args.pickle')
     return bs_tree
-    
+
 if __name__ == '__main__':
     args = parse_arguments()
     main(args)

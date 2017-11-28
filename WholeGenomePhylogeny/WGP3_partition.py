@@ -1,6 +1,6 @@
 #!/global/scratch/hannsode/pkgs/anaconda2/bin/python
 # Standard modules
-import os, sys, pickle
+import os, sys, pickle, shutil
 import subprocess as sp
 
 # Nonstandard modules
@@ -24,7 +24,19 @@ def partition(args, alignment):
         pass
     
     phylip = fasta_to_phylip(alignment)
-    os.symlink(basedir+'/'+phylip, basedir+'/'+args.output+'/'+phylip)
+
+    # PartitionFinder must be run from a unique subdirectory
+    # because the names of it's intermediate and output files
+    # are hardcoded. This will allow for running multiple
+    # instances of WGP from the same directory.
+    phypath = basedir+'/3_partitioning/'+phylip
+    link = basedir+'/3_partitioning/'+args.output+'/'+phylip
+    if not (os.path.islink(link) and os.path.realpath(link) == phypath):
+        try:
+            os.remove(link)
+        except OSError:
+            pass
+        os.symlink(phypath, link)
     os.chdir(args.output)
     configure_PF(phylip)
     os.chdir(basedir+'/3_partitioning')
@@ -61,11 +73,14 @@ def partition(args, alignment):
                     mem_per_cpu = '3000',
                     modules = ['raxml/8.1.17'])
     job_wait(ID)
+    outfile = 'partitionfinder_'+str(ID)+'.out'
+    errfile = 'partitionfinder_'+str(ID)+'.err'
     
     partition_file = get_scheme(args.output)
-    
+
     os.chdir(basedir)
-    return basedir+'/3_partitioning/'+partition_file, phylip
+    cleanup(logs=[outfile, errfile], trashdir=basedir+'/3_partitioning/'+args.output)
+    return basedir+'/3_partitioning/'+partition_file, phypath
 
 def fasta_to_phylip(fastafile):
     # Had to write my own phylip writer because Bio.AlignIO.write puts spaces in the sequence blocks that break PartitionFinder.
@@ -160,6 +175,13 @@ def get_scheme(output):
     with open(outfile, 'w') as fh:
         fh.writelines(subsets)
     return outfile
+
+def cleanup(logs=[], trashdir=None):
+    if logs and not os.path.isdir('3_partitioning/logs'):
+        os.mkdir('3_partitioning/logs')
+    [os.rename('3_partitioning/'+log, '3_partitioning/logs/'+log) for log in logs]
+    if trashdir:
+        shutil.rmtree(trashdir)
 
 if __name__ == '__main__':
     argfile = sys.argv[1]

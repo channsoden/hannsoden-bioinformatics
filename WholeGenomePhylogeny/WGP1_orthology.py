@@ -18,7 +18,7 @@ def orthology(args):
     # Find orthologous sequences between all genomes and write them to fasta files.
 
     # Align any queries to the reference that have not yet been aligned.
-    runmummer(args)
+    deltafiles = runmummer(args)
 
     job = '{} {} {}'.format(sys.executable, __file__, args.output+'.args.pickle')
     #ID = submit(job,
@@ -42,6 +42,17 @@ def orthology(args):
                 modules = ['biopython/1.64-2.7.8',
                            'pandas/0.14.1'])
     job_wait(ID)
+    out_file = 'py_ortho_'+str(ID)+'.out'
+    err_file = 'py_ortho_'+str(ID)+'.err'
+
+    if not os.path.isfile('1_orthology/'+args.output+'.OS.txt'):
+        exit_message = 'Orthology search failed.\n\n{}:\n{}'
+        exit_message = exit_message.format(err_file, open(err_file, 'r').read())
+        sys.stderr.write(exit_message)
+        cleanup([out_file, err_file])
+        return None
+
+    cleanup([out_file, err_file])
     return get_segments(args)
 
 def runmummer(args):
@@ -78,8 +89,13 @@ def nucmer(reference, query):
                     job_name = 'mummer',
                     mem_per_cpu = '2G')
         job_wait(ID)
+        outfile = 'mummer_'+str(ID)+'.out'
+        errfile = 'mummer_'+str(ID)+'.err'
+        cleanup([outfile, errfile])
+        
     if os.path.isfile(deltafile):
         os.remove(deltafile)
+        
     return filterfile
 
 def merge_endpoints(endpointsA, endpointsB):
@@ -129,21 +145,21 @@ def extract_orthologous_sequence(reference, delta_files, uni_shared_ref):
     except OSError:
         pass
 
+    template = '{}_{}-{}' # scaffold_startPos-endPos
+    results = open(args.output+'.OS.txt', 'w')
+    
     # Write the reference segments to files
     ref = fasta_to_dict(reference)
     for scaf, seglist in uni_shared_ref.items():
         for segStart, segEnd in seglist:
-            segID = '{}_{}-{}'.format(scaf, segStart, segEnd)
-            faFH = open(args.output+'.shared_alignment/{}.fa'.format(segID), 'w')
+            segID = template.format(scaf, segStart, segEnd)
+            faFH = open(args.output+'.shared_alignment/{}.{}.fa'.format(args.output, segID), 'w')
             rec = SeqRecord(ref[scaf].seq[segStart-1:segEnd],
                             id=segID,
                             description=args.reference+':'+segID)
             SeqIO.write(rec, faFH, 'fasta')
+            results.write('{}.{}.fa\n'.format(args.output, segID))
             faFH.close()
-            
-    template = '{}_{}-{}' # scaffold_startPos-endPos
-
-    results = open(args.output+'.OS.txt', 'w')
 
     for df in delta_files:
         # Load the query genome
@@ -178,8 +194,7 @@ def extract_orthologous_sequence(reference, delta_files, uni_shared_ref):
                                 id=segID,
                                 description=desc)
                 
-                faFile = args.output+'.shared_alignment/'+template.format(aln.rSeq, rStart, rEnd)+'.fa'
-                results.write(faFile.split('/')[-1]+'\n')
+                faFile = args.output+'.shared_alignment/'+args.output+'.'+template.format(aln.rSeq, rStart, rEnd)+'.fa'
 
                 if tStart == rStart and tEnd == rEnd:
                     faFH = open(faFile, 'a')
@@ -192,7 +207,7 @@ def extract_orthologous_sequence(reference, delta_files, uni_shared_ref):
                     SeqIO.write(records, faFH, 'fasta')
                 faFH.close()
     
-    return args.output+'.shared_alignment/'+template.format(*['*']*3)+'.fa'
+    return args.output+'.shared_alignment/'+args.output+'.'+template.format(*['*']*3)+'.fa'
 
 def fasta_to_dict(fastafile):
     with open(fastafile, 'r') as fh:
@@ -265,10 +280,25 @@ def merge_records(rec, qerFile, qStart, qEnd, faFile, tStart, tEnd, seq, aln, te
             records.append(recB)
     return records
 
+def seg_stats(seg_list):
+    lengths = [end-(start-1) for scaf_list in seg_list.values() for start, end in scaf_list]
+    n = len(lengths)
+    if not n:
+        return 0, 0, 0
+    total = sum(lengths)
+    mean = float(total) / n
+    return n, mean, total
+
 def get_segments(args):
     fh = open('1_orthology/'+args.output+'.OS.txt', 'r')
     segment_files = [line.strip() for line in fh if line.strip()]
     return segment_files
+
+def cleanup(logs):
+    if not os.path.isdir('1_orthology/logs'):
+        os.mkdir('1_orthology/logs')
+    for log in logs:
+        os.rename(log, '1_orthology/logs/'+log)
 
 if __name__ == '__main__':
     with open(sys.argv[1], 'rb') as fh:
@@ -297,6 +327,17 @@ if __name__ == '__main__':
     else:
         uni_shared_ref = pickle.load(open(jar, 'rb'))    
 
+    num_segs, mean_size, total_orth = seg_stats(uni_shared_ref)
+    print 'Found {} orthologous segments totalling {} bp (mean {} bp).'.format(num_segs, total_orth, mean_size)
+    if not num_segs:
+        sys.exit('Aborting whole genome phylogeny: no orthologous segments found.')
+    elif total_orth < 10000:
+        sys.exit('Aborting whole genome phylogeny: too little orthology found.')
+    elif mean_size < 100:
+        sys.exit('Aborting whole genome phylogeny: orthologous segments too short.')
+    else:
+        pass
+        
     print 'Extracting and writing orthologous segments. . .'
     # Go back to the alignment files, and for each uni segment use the alignments to write a fasta file
     # containing the orthologous segments from each genome.
@@ -307,4 +348,5 @@ if __name__ == '__main__':
         shutil.rmtree(args.output+'.shared_alignment/')
     else:
         os.rename(args.output+'.shared_alignment', basedir+'/2_alignment')
+    
     os.chdir(basedir)

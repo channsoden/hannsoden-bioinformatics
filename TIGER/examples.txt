@@ -1,0 +1,4 @@
+tiger2 -in small_test.fasta -a dna -out 200_test -f phylip -rl -bt linear
+tiger2 -in small_test.fasta -a dna -out 200_test -f phylip -rl -bt linear -t 20
+tiger2 -in large_test.fasta -a dna -out 200_large_test -f phylip -rl -bt linear
+tiger2 -in large_test.fasta -a dna -out 200_large_test -f phylip -rl -bt linear -t 20

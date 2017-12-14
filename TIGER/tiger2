@@ -1,0 +1,388 @@
+#!/usr/bin/env python
+
+#*********TIGER v1.02*************
+__author__ = "Carla Cummins"
+__credits__ = ["Carla Cummins", "James Mc Inerney", "Christopher Hann-Soden"]
+__version__ = "1.02"
+
+import time, sys, argparse
+starttime = time.time()
+from tiger_fns_200 import *
+
+# hannsoden_bioinformatics
+from fasta_tools import fasta_to_dict
+
+def parse_args():
+    docstr = ('Tree-Independent Generation of Evolutionary Rates.\n\n' + \
+              'Developed by Carla Cummins in the lab of James Mc Inerney, NUI Maynooth, Co. Kildare, Ireland.\n' + \
+              'Revised and optimzed by Christopher Hann-Soden in the lab of John W. Taylor, UC Berkeley, Berkeley, CA, USA.')
+    examples = """-Examples:
+    
+    1.   ./TIGER -in ExampleFile.aln -f s r -v -rl rate_list.txt
+    
+         This will run the software on "ExampleFile.aln", with sorted ranks included in the output.
+         The variability measure for each site will be displayed and a list of the rates at (unsorted)
+          sites will be written to the file "rate_list.txt".
+    
+    2.   ./TIGER -in ExampleFile.aln -ptp -r 1000 -p 0.01 -u "?*"
+    
+         This will run the software on the file "ExampleFile.aln" with a PTP test. Sites will be
+         randomised 1,000 times and pass the test if their p-value is <0.01. All ? and * characters
+         encountered in the alignment will be ommitted from the analysis."""
+
+    class SmartFormatter(argparse.RawTextHelpFormatter):
+        def _split_lines(self, text, width):
+            lines = text.splitlines()
+            lines = [nl for line in lines for nl in argparse.HelpFormatter._split_lines(self, line, width)]
+            return lines
+    
+    parser = argparse.ArgumentParser(description = docstr, formatter_class = SmartFormatter, epilog = examples)
+    # General options
+    parser.add_argument('-v', '--version', default=False, action='store_true',
+                        help='Returns current TIGER version.')
+    parser.add_argument('-t', '--threads', type=int, default=1,
+                        help='Number threads to run.')
+    
+    # Input options
+    parser.add_argument('-in', '--input', type=str, required=True,
+                        help=('Specify input file. File must be in FastA format and must be aligned prior. ' + \
+                              'Datasets with uneven sequence lengths will return an error.') )
+    parser.add_argument('-a', '--alphabet', type=str, default='standard', choices=['dna', 'protein', 'standard'],
+                        help='Specify input type. Use "standard" for other encoded traits. Default is "standard".')
+    parser.add_argument('-u', '--unknown', type=str, default='?',
+                        help=('Specify unknown characters in the alignment. ' + \
+                              'Unknown characters are omitted from site patterns and so are not considered in the analysis. ' + \
+                              'Recommended to wrap characters in quotes. ' + \
+                              'Multiple characters may be specified in a single string (e.g. -u "?-*").\n ' + \
+                              'Default is ? only.\n' + \
+                              'Ambiguous bases are already recognized when the alphabet is set to "dna".') )
+
+    # Formatting and output options
+    parser.add_argument('-out', '--output', type=str, required=True,
+                        help='Specify a name for output files.')
+    parser.add_argument('-f', '--format', type=str, default=None, choices=['phylip', 'nexus'],
+                        help=('Specify output format. Supported formats are "phylip" and "nexus". ' + \
+                              'By default no alignment will be written. Also specifies format for binned partitions.') )
+    parser.add_argument('-rl', '--rates', default=False, action='store_true',
+                        help='Write a list of the rate at each site to "[out].rates.txt".')
+    parser.add_argument('-s', '--sort', default=False, action='store_true',
+                        help='Sorts sites depending on their agreement score.')
+    parser.add_argument('-r', '--rank', default=False, action='store_true',
+                        help='Displays rank values rather than bin numbers.')
+    parser.add_argument('-c', '--columns', default=False, action='store_true',
+                        help='Include column numbers.')
+    
+    # Binning options
+    parser.add_argument('-bt', '--bintype', type=str, default=None, choices=['linear', 'rota'],
+                        help=('Specify the type of binning to be used.\n' + \
+                              '"linear" specifies equal width bins between 0 and 1, ' + \
+                              'with the number of bins specified with -b.\n' + \
+                              '"rota" specifies exponentially narrower bins between min and max rates, ' + \
+                              'as described by Rota et al. (2017). Here, -b specifies the division factor "d".') )
+    parser.add_argument('-b', '--bins', type=int, default=10,
+                        help='Set the number of bins to be used. Default is 10.')
+
+    # PTP options
+    parser.add_argument('-ptp', dest='ptp', default=False, action='store_true',
+                        help='Specifies that a PTP test should be run.\n*Note: this option has a huge effect on running time.')
+    parser.add_argument('-z', '--rands', type=int, default=100,
+                        help='Number of randomisations to be used for the PTP test. Default is 100.')
+    parser.add_argument('-p', '--pval', type=float, default=0.05,
+                        help='Specify p-value which denotes significance in PTP test. Default is 0.05.')
+    parser.add_argument('-pl', '--pvalues', default=False, action='store_true',
+                        help='Write a list of p-values to "[out].pvals.txt".')
+    
+    args = parser.parse_args()
+
+    if args.version:
+        print "TIGER version {}".format(__version__)
+        sys.exit(0)
+    
+    try:
+        infile = open(args.input, 'r')
+    except IOError as error:
+        raise error('File "{}" not found...'.format(args.input))
+
+    if args.bintype and not args.format:
+        sys.exit('When --bintype is set --format must specify the output format.')
+    
+    args.formRate = 'r' in args.format
+    args.formSort = 's' in args.format
+    args.numbered = 'c' in args.format
+
+    args.alphabet = char_set(args.unknown, args.alphabet)
+        
+    return args
+    
+if __name__ == '__main__':
+    args = parse_args()
+    
+    report('parsing fasta. . .')
+    alignment = fasta_to_dict(args.input)
+    names, seqs = zip(*alignment.items())
+    report('done parsing')
+
+    lns = set([len(s) for s in seqs])
+    if len(lns) > 1:
+        sys.exit("\n\nUneven sequence lengths. Ensure sequences have been aligned!\n\n")
+
+    report('sequences are {}'.format(args.alphabet) )
+    
+    #seqs = [s[:10000] for s in seqs]
+    set_bitsize(len(seqs))
+
+    partitions, patterns = partition_sites(seqs, args) # partitions is indexes of patterns where they occur
+    report( '{} unique partitions observed across {} sites'.format(len(patterns), len(partitions)) )
+    
+    # Note that invariant sites never agree with variant sites (score = 0),
+    # but all sites agree with invariant sites (score = 1), so only variants
+    # need to be compared with eachother.
+    # Furthermore, sites with identical partitions will have the same rate,
+    # so that rate only needs to be calculated once.
+
+    pattern_counts = [0 for i in range(len(patterns))]
+    for i in partitions:
+        pattern_counts[i] += 1
+    invariant_index = patterns.index(tuple([bitsize.max])) # should be one partition consisting of n 1 bits
+    num_invariants = pattern_counts[invariant_index]
+    num_variants = len(partitions) - num_invariants
+    report( '{} invariant sites ({}%)'.format(num_invariants, float(num_invariants) / len(partitions) * 100) )
+
+    # Unlike it says in the TIGER paper, only variant sites are compared to
+    # eachother. This allows for utilizing the full range of rates from 0 to
+    # 1, rather than just 0 to the fraction of variant sites. As a consequence,
+    # variant sites could theoretically have a score of 1, if all variant sites
+    # were partitioned in the same way. This is approach is perhaps not fully
+    # justified.
+    #nMinusOne = float(len(partitions) - 1)
+    nMinusOne = float(num_variants - 1)
+    
+    report('calculating rates. . .')
+    pattern_rates, rates = calculate_rates(patterns, pattern_counts, nMinusOne, num_invariants, invariant_index, partitions, args)
+    report('finished calculating rates')
+
+    report('binning rates. . .')
+    if args.bintype == 'linear':
+        bins, hist, ranks, partitions = linear_binning(rates, args)
+    elif args.bintype == 'rota':
+        bins, hist, ranks, partitions = rate_partitioning(pattern_rates, pattern_counts, rates, args)
+    else:
+        bins, hist, ranks, partitions = None, None, None, None
+    
+    report('finished binning')
+    
+    report('writing output')
+
+    # Output all rate scores
+    if args.rates:
+        fh = open(args.output+'.rates.txt', 'w')
+        [fh.write('{}\n'.format(r)) for r in rates]
+        fh.close()
+
+    # Output p-values (only if calculated with ptp)
+    if args.pval:
+        fh = open(args.output+'.pvals.txt', 'w')
+        # not implemented yet
+        fh.close()
+    
+    # Output bins in Phylip format
+    if args.format == 'phylip':
+        output_phylip(args.output+'.phylip', names, seqs)
+        output_phylip_partitions(args.output+'.partitions.txt', partitions, args.alphabet)
+    
+    # Output alignment in Nexus format with bins
+    if args.format == 'nexus':
+        output_nexus('filename', names, seqs, partitions, hist)
+
+    endtime = time.time()
+    complete = int(endtime - starttime)
+    hours = complete / 3600
+    minutes = (complete % 3600) / 60
+    seconds = complete % 60
+    print 'Finished in {}h {}m {}s'.format(hours, minutes, seconds)
+        
+    sys.exit()
+
+
+
+
+
+#Output total alignment score to file alnRate.txt
+if write_rates:
+    handle = open(rate_file, 'w')
+    handle.write("\n".join([str(r) for r in ranks]))
+    handle.close()
+
+if write_pvals and not doPTP:
+    outF.write("-ptp option not selected. No p-values to write!")
+
+
+#Find significant sites
+if doPTP:
+    sig_dis = []
+    for x in range(len(disagree)):
+        if disagree[x] < pval:
+            sig_dis.append(x+1)
+
+    if write_pvals:
+        outF = open(pval_file, 'w')
+        for d in range(len(disagree)):
+            outF.write(str(disagree[d]))
+            if (d+1) in sig_dis:
+                outF.write(" *")
+            outF.write("\n")
+
+
+#Make names equal lengths
+filler = " "*20
+filled_names = names[:]
+for n, nm in enumerate(names):
+    nm_r = re.sub("[\s]+", "_", nm)
+    if len(nm_r) > 20:
+        filled_names[n] = nm_r[1] + "_" + nm_r[-18:]
+    else:
+        filled_names[n] = nm_r+ filler[:(20 -len(nm_r))]
+
+
+#print in correct format.... :(
+print "#NEXUS\n\n[This file contains data that has been analysed for site specific rates]"
+print "[using TIGER, developed by Carla Cummins in the laboratory of]"
+print "[Dr James McInerney, National University of Ireland, Maynooth]\n\n"
+
+print "[Histograms of number of sites in each category:]"        
+Hnames = []
+counts = []
+for b in range(binNo):
+    Hnames.append("Bin" + str(b+1) + "\t")
+    counts.append(binStr.count(str(b+1)))
+histogram(counts, Hnames)
+
+print "\n\n"
+
+print "\n\n\nBEGIN TAXA;"
+print "\tDimensions NTax = ", len(seqs), ";"
+print "\tTaxLabels ", " ".join(filled_names), ";\nEND;\n"
+
+print "BEGIN CHARACTERS;"
+print "\tDimensions nchar = ", len(seqs[0]), ";"
+print "\tFormat datatype = ", datatype, " gap = - interleave;\nMatrix\n"
+
+
+sorted = range(len(seqs[0]))
+if formSort == 1:
+    sorted = range(len(ranks))
+    sr = ranks[:]
+    sr.sort()
+    sr.reverse()
+    s = 0
+    sortD = {}
+    for x in range(len(ranks)):
+        ind = sr.index(ranks[x])
+        sortD[x] = ind
+        sorted[ind] = x
+        sr[ind] = "|"
+
+    print sortD
+
+
+    if doPTP:
+        sig_sorted = []
+        for d in sig_dis:
+            sig_sorted.append(sortD[d-1]+1)
+        sig_dis = sig_sorted
+
+for xy in range(0, len(seqs[0]), 60):
+    for xz in range(len(seqs)):
+        ln = filled_names[xz] + "\t"
+        
+        if len(seqs[xz][xy:]) < 60:
+            for i in sorted[xy:]:
+                ln = ln + seqs[xz][i].upper()
+        else:
+            for j in sorted[xy:xy+60]:
+                ln = ln + seqs[xz][j].upper()
+
+        print ln
+    
+    if formRate == 0:
+        for x in range(len(str(binNo))):
+            if x == 0:
+                bnls = "[Bin Numbers        \t"
+            else:
+                bnls = "[" + filler + "\t"
+                
+            for y in range(xy, (xy + 60)):
+                if y < len(binStr):
+                    if len(binStr[sorted[y]]) - 1 < x:
+                        bnls = bnls + " "
+                    else:
+                        s = sorted[y]
+                        bnls = bnls + str(binStr[s])[x]
+                else:
+                    break
+            print bnls + "]"
+
+    else:
+        for c in range(5):
+            if c == 0:
+                rtls = "[Rank Values        \t"
+            else:
+                rtls = "[" + filler + "\t"
+            for d in range(xy, (xy + 60)):
+                if d < len(ranks):
+                    if len(str(ranks[sorted[d]])) - 1 < c:
+                        rtls = rtls + " "
+                    else:
+                        rtls = rtls + str(ranks[sorted[d]])[c]
+                else:
+                    break
+            print rtls + "]"
+
+    if numbered:
+        digits = len(str(len(sorted)))
+        srted = sorted[:]
+        for sn, sv in enumerate(srted):
+            if len(str(sv)) < digits:
+                srted[sn] = str(sv) + " "*(digits-len(str(sv)))
+        for c in range(digits):
+            if c == 0:
+                colnms = "[Column Numbers     \t"
+            else:
+                colnms = "[" + filler + "\t"
+            nms = [str(n)[c] for n in srted[xy:xy+60]]
+            colnms += "".join(nms)
+            print colnms + "]"
+
+
+
+    print "\n"
+print "\n"
+
+print ";\nEND;\n\nBEGIN PAUP;"
+if formSort:
+    lower_bound = 1
+    for c in range(1, binNo + 1):
+        amt = binStr.count(str(c))
+        if amt > 0:
+            charset =  "\tCharset Bin" + str(c) + " = "
+            upper_bound = lower_bound + (binStr.count(str(c))) - 1
+            charset = charset + str(lower_bound) + "-" + str(upper_bound) + ";"
+            lower_bound = upper_bound + 1
+            print charset
+else:
+    for x in range(1, binNo + 1):
+        tmpL = []
+        if str(x) in binStr:
+            for y in range(len(binStr)):
+                if str(binStr[y]) == str(x):
+                    tmpL.append(str(y + 1))
+            print "\tCharset Bin" + str(x) + " = ", " ".join(tmpL) + ";"
+
+if doPTP:
+    print "\tCharset Sig_Disagreement = " + " ".join([str(i) for i in sig_dis]) + ";"
+
+print "END;"
+
+lt_F = time.localtime()
+print "[START TIME:", lt_S[3], ":", lt_S[4],":", lt_S[5], "]"
+print "[FINISH TIME:", lt_F[3], ":", lt_F[4],":", lt_F[5], "]"

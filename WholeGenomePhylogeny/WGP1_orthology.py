@@ -91,7 +91,10 @@ def nucmer(reference, query):
         job_wait(ID)
         outfile = 'mummer_'+str(ID)+'.out'
         errfile = 'mummer_'+str(ID)+'.err'
-        cleanup([outfile, errfile])
+        if not os.path.isdir('logs'):
+            os.mkdir('logs')
+        os.rename(outfile, 'logs/'+outfile)
+        os.rename(errfile, 'logs/'+errfile)
         
     if os.path.isfile(deltafile):
         os.remove(deltafile)

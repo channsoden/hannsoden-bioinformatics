@@ -173,4 +173,4 @@ if __name__ == '__main__':
     fastas = sys.argv[1:]
 
     calls = [(align_trim, [fasta]) for fasta in fastas]
-    nones = mapPool(20, calls)
+    nones = mapPool(20, calls, daemonic=True, chunksize=50)

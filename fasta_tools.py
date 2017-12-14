@@ -71,3 +71,35 @@ def wrap_fasta(fasta_file, out_file = '', N = 80):
             for i in range(0, len(line), N):
                 out.write(line[i: i+N])
                 out.write('\n')
+
+def fasta_to_phylip(fastafile):
+    # Bio.AlignIO.write puts spaces in the sequence blocks that break some tools.
+    records = fasta_to_dict(fastafile)
+    seq_len = max([len(seq) for seq in records.values()])
+
+    outfile = fastafile.split('/')[-1].rsplit('.', 1)[0] + '.phy'
+    outfh = open(outfile, 'w')
+
+    # Print the header
+    outfh.write(' {} {}\n'.format(len(records), seq_len))
+    
+    # Print the first block.
+    names = records.keys()
+    name_length = max([len(name) for name in names]) + 2
+    for name in names:
+        outfh.write(name + ' ' * (name_length - len(name)))
+        outfh.write(records[name][:50])
+        outfh.write('\n')
+
+    # Print the interleaved blocks.
+    i = 50
+    while i <= seq_len:
+        outfh.write('\n')
+        for name in names:
+            outfh.write(' ' * name_length)
+            outfh.write(records[name][i:i+50])
+            outfh.write('\n')
+        i += 50
+
+    outfh.close()
+    return outfile

@@ -184,7 +184,7 @@ def hist(bins, rates):
         rank = bisect_right(bins, r) - 1
         hist[rank] += 1
         ranks.append(rank)
-        partitions[rank].append(i)
+        partitions[rank].append(i+1)
     return bins, hist, ranks, partitions
 
 def output_phylip(filename, names, seqs):

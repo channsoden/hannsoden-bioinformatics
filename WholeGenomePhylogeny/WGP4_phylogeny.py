@@ -58,7 +58,9 @@ def examl(binary_alignment, startingtree, outprefix):
     errlog = 'examl_{}.err'.format(outprefix)
     sp.Popen(command, shell=True, stdout=open(outlog, 'a'), stderr=open(errlog, 'a')).wait()
     result = 'ExaML_result.' + outprefix
-    cleanup(logs=[outlog, errlog], trash=[f for f in os.listdir('.') if (outprefix in f and f  not in [result, outlog, errlog])])
+
+    partlog = 'parse_{}.out'.format(binary_alignment.rsplit('.', 2)[0])
+    cleanup(logs=[outlog, errlog, partlog], trash=[f for f in os.listdir('.') if (outprefix in f and f  not in [result, outlog, errlog])])
     return result
 
 def cleanup(logs=[], trash=[]):

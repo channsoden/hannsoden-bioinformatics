@@ -51,10 +51,10 @@ def partition(args, alignment):
     partition_file = args.output + '.phartitions.txt'
     
     os.chdir(basedir)
-    cleanup(logs=[outfile, errfile])
+    cleanup([outfile, errfile])
     return basedir+'/3_partitioning/'+partition_file, basedir+'/3_partitioning/'+phylip_file
 
-def cleanup(logs=[]):
-    if logs and not os.path.isdir('3_partitioning/logs'):
+def cleanup(logs):
+    if not os.path.isdir('3_partitioning/logs'):
         os.mkdir('3_partitioning/logs')
     [os.rename('3_partitioning/'+log, '3_partitioning/logs/'+log) for log in logs]

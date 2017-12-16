@@ -168,7 +168,7 @@ if __name__ == '__main__':
         bins, hist, ranks, partitions = rate_partitioning(pattern_rates, pattern_counts, rates, args)
     else:
         bins, hist, ranks, partitions = None, None, None, None
-    
+        
     report('finished binning')
     
     report('writing output')

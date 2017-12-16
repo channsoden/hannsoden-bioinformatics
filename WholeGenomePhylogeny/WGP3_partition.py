@@ -16,6 +16,9 @@ def partition(args, alignment):
         pass
     os.chdir('3_partitioning')
 
+    phylip_file = args.output + '.phylip'
+    partition_file = args.output + '.phartitions.txt'
+
     input_size = os.stat(alignment).st_size / (10 ** 6)
     # make some guesses about runtime
     if input_size > 1000:
@@ -47,9 +50,6 @@ def partition(args, alignment):
     outfile = 'rate_partitioning_'+str(ID)+'.out'
     errfile = 'rate_partitioning_'+str(ID)+'.err'
 
-    phylip_file = args.output + '.phylip'
-    partition_file = args.output + '.phartitions.txt'
-    
     os.chdir(basedir)
     cleanup([outfile, errfile])
     return basedir+'/3_partitioning/'+partition_file, basedir+'/3_partitioning/'+phylip_file

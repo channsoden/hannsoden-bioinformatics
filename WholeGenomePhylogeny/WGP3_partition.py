@@ -17,7 +17,7 @@ def partition(args, alignment):
     os.chdir('3_partitioning')
 
     phylip_file = args.output + '.phylip'
-    partition_file = args.output + '.phartitions.txt'
+    partition_file = args.output + '.partitions.txt'
 
     input_size = os.stat(alignment).st_size / (10 ** 6)
     # make some guesses about runtime
@@ -36,7 +36,7 @@ def partition(args, alignment):
     else:
         time = '0:1:0'
     
-    command = 'tiger2 -in {} -a dna -out {} -f phylip -bt rota -b 4 -t 20'
+    command = 'tiger2 -in {} -a dna -out {} -f phylip -bt rota -b 4 -t 1'
     command = command.format(alignment, args.output)
     ID = submit(command,
                 partition = 'savio',
@@ -55,6 +55,9 @@ def partition(args, alignment):
     return basedir+'/3_partitioning/'+partition_file, basedir+'/3_partitioning/'+phylip_file
 
 def cleanup(logs):
-    if not os.path.isdir('3_partitioning/logs'):
+    try:
         os.mkdir('3_partitioning/logs')
-    [os.rename('3_partitioning/'+log, '3_partitioning/logs/'+log) for log in logs]
+    except OSError:
+        pass
+    for log in logs:
+        os.rename('3_partitioning/'+log, '3_partitioning/logs/'+log)

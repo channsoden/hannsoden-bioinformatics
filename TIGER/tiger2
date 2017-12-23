@@ -128,7 +128,6 @@ if __name__ == '__main__':
 
     report('sequences are {}'.format(args.alphabet) )
     
-    #seqs = [s[:10000] for s in seqs]
     set_bitsize(len(seqs))
 
     partitions, patterns = partition_sites(seqs, args) # partitions is indexes of patterns where they occur

@@ -298,8 +298,10 @@ def get_segments(args):
     return segment_files
 
 def cleanup(logs):
-    if not os.path.isdir('1_orthology/logs'):
+    try:
         os.mkdir('1_orthology/logs')
+    except OSError:
+        pass
     for log in logs:
         os.rename(log, '1_orthology/logs/'+log)
 

@@ -164,10 +164,14 @@ def RAxML_valid(seqlist):
     return False
 
 def cleanup(logs=[], trash=[]):
-    if logs and not os.path.isdir('logs'):
+    try:
         os.mkdir('logs')
-    [os.rename(log, 'logs/'+log) for log in logs]
-    [os.remove(f) for f in trash]
+    except OSError:
+        pass
+    for log in logs:
+        os.rename(log, 'logs/'+log)
+    for f in trash:
+        os.remove(f)
 
 if __name__ == '__main__':
     fastas = sys.argv[1:]

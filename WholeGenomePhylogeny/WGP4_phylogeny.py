@@ -56,15 +56,26 @@ def examl(binary_alignment, startingtree, outprefix):
     command = '{} -s {} -n {} -m GAMMA -t {} -p {}'.format(examl_path, binary_alignment, outprefix, startingtree, randomseed)
     outlog = 'examl_{}.out'.format(outprefix)
     errlog = 'examl_{}.err'.format(outprefix)
-    sp.Popen(command, shell=True, stdout=open(outlog, 'a'), stderr=open(errlog, 'a')).wait()
+    outfh = open(outlog, 'w')
+    errfh = open(errlog, 'w')
+    sp.Popen(command, shell=True, stdout=outfh, stderr=errfh).wait()
+    outfh.close()
+    errfh.close()
     result = 'ExaML_result.' + outprefix
 
-    partlog = 'parse_{}.out'.format(binary_alignment.rsplit('.', 2)[0])
-    cleanup(logs=[outlog, errlog, partlog], trash=[f for f in os.listdir('.') if (outprefix in f and f  not in [result, outlog, errlog])])
+    partlog = 'parse_{}.out'.format(binary_alignment.rsplit('.', 3)[0])
+    cleanup(logs=[outlog, errlog, partlog],
+            trash=[f for f in os.listdir('.')
+                   if (outprefix in f and
+                       f  not in [result, outlog, errlog, partlog])])
     return result
 
 def cleanup(logs=[], trash=[]):
-    if logs and not os.path.isdir('logs'):
+    try:
         os.mkdir('logs')
-    [os.rename(log, 'logs/'+log) for log in logs]
-    [os.remove(f) for f in trash]
+    except OSError:
+        pass
+    for log in logs:
+        os.rename(log, 'logs/'+log)
+    for f in trash:
+        os.remove(f)

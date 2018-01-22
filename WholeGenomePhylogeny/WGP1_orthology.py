@@ -45,7 +45,7 @@ def orthology(args):
     out_file = 'py_ortho_'+str(ID)+'.out'
     err_file = 'py_ortho_'+str(ID)+'.err'
 
-    if not os.path.isfile('1_orthology/'+args.output+'.OS.txt'):
+    if not os.path.isfile('1_orthology/'+args.output+'.OS.txt') or args.force:
         exit_message = 'Orthology search failed.\n\n{}:\n{}'
         exit_message = exit_message.format(err_file, open(err_file, 'r').read())
         sys.stderr.write(exit_message)
@@ -64,20 +64,25 @@ def runmummer(args):
     os.chdir('1_orthology')
 
     queries = [genome for genome in args.genomes if not genome.split('/')[-1] == args.reference.split('/')[-1]]
-    mummer_runs = [[nucmer, [args.reference, genome]] for genome in queries]
+    if not os.path.isdir('logs'):
+        os.mkdir('logs')
+    mummer_runs = [[nucmer, [args.reference, genome, args.force]] for genome in queries]
     delta_files = mapPool(len(mummer_runs), mummer_runs)
 
     os.chdir(basedir)
     return delta_files
     
-def nucmer(reference, query):
+def nucmer(reference, query, force=False):
     prefix = os.path.splitext(os.path.basename(reference))[0] + '.' + os.path.splitext(os.path.basename(query))[0]
     deltafile = prefix + '.delta'
     tempfile = prefix + '.mgaps'
     filterfile = deltafile + '.filtered'
+    first_try = force
     while (not os.path.isfile(filterfile) or
            os.stat(filterfile).st_size == 0 or
-           os.path.isfile(tempfile)):
+           os.path.isfile(tempfile) or
+           first_try):
+        first_try = False
         command_chain = ('nucmer -g 2000 --prefix={0} {1} {2}; '+
                          'delta-filter -1 {3} -o 0 > {4};')
         command_chain = command_chain.format(prefix, reference, query, deltafile, filterfile)
@@ -85,14 +90,13 @@ def nucmer(reference, query):
                     partition='savio',
                     account='co_rosalind',
                     qos='rosalind_savio_normal',
-                    time='2:0:0',
+                    time='4:0:0',
                     job_name = 'mummer',
                     mem_per_cpu = '2G')
         job_wait(ID)
         outfile = 'mummer_'+str(ID)+'.out'
         errfile = 'mummer_'+str(ID)+'.err'
-        if not os.path.isdir('logs'):
-            os.mkdir('logs')
+
         os.rename(outfile, 'logs/'+outfile)
         os.rename(errfile, 'logs/'+errfile)
         
@@ -318,7 +322,7 @@ if __name__ == '__main__':
     print 'Finding segments of the reference that have orthologous sequences in all queries (uni_shared_ref). . .'
     # uni_shared_ref = {ref_scaf: [(start, end), (start, end), . . .], ref_scaf: [. . .], . . .}
     jar = args.output+'.uni_shared_ref.pickle'
-    if not os.path.isfile(jar) or not os.path.isfile(args.output+'.OS.txt'):
+    if not os.path.isfile(jar) or not os.path.isfile(args.output+'.OS.txt') or args.force:
         ref_lens = fasta_tools.get_scaffold_lengths(args.reference)
         # Make a list of endpoints of orthologous segments for each ref scaffold.
         # The queries of endpoints are not differentiated, only starts and ends (negative).

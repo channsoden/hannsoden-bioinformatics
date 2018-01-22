@@ -52,9 +52,18 @@ def parse_arguments():
     parser.add_argument('-d', '--dataset', type=str, default='', help='name of a dictionary of fasta genomes in genome_datasets.py')
     parser.add_argument('-b', '--bootstrap', dest='bootstrap', action='store_true', help='run a bootstrap analysis after making tree')
     parser.add_argument('genomes', type=str, nargs='*', help='list of fasta formatted genomes')
+    parser.add_argument('-f', '--force', action='store_true', default=True, help='force overwrite of intermediates and results from previous run')
+    parser.add_argument('-x', '--restart', action='store_true', default=False, help='restart or repeat a run identified by the -o option')
     parser.set_defaults(bootstrap=False)
     args = parser.parse_args()
 
+    if args.restart:
+        args = pickle.load( open(args.output+'.args.pickle', 'rb') )
+        return args
+
+    if args.force:
+        args.step = 1
+    
     if args.genomes and args.dataset:
         raise Exception('Either provide a list of fasta genomes or name a dataset with -d, not both.')
     elif not args.genomes and args.dataset:

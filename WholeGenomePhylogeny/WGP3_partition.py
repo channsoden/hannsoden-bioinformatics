@@ -5,6 +5,7 @@ import os
 # Nonstandard modules
 
 # My modules
+from fasta_tools import total_length
 from SLURM_tools import submit
 from SLURM_tools import job_wait
 
@@ -19,30 +20,23 @@ def partition(args, alignment):
     phylip_file = args.output + '.phylip'
     partition_file = args.output + '.partitions.txt'
 
-    input_size = os.stat(alignment).st_size / (10 ** 6)
-    # make some guesses about runtime
-    if input_size > 1000:
-        time = '72:0:0'
-    elif input_size > 300:
-        time = '24:0:0'
-    elif input_size > 150:
-        time = '6:0:0'
-    elif input_size > 50:
-        time = '4:0:0'
-    elif input_size > 10:
-        time = '1:0:0'
-    elif input_size > 1:
-        time = '0:20:0'
-    else:
-        time = '0:1:0'
-    
+    # Rate partitioning usually takes under 0.5s per unique pattern
+    # in the alignment. There is no fast way to know how many unique
+    # patterns there will be in an alignment of a given size.
+    pps = 0.05 # empirical guess of high patterns per site
+    records = len(args.genomes)
+    sites = total_length(alignment) / records
+    estimated_patterns = pps * sites
+    estimated_runtime = int(estimated_patterns * 0.5)
+    minutes = (estimated_runtime / 60) +1
+
     command = 'tiger2 -in {} -a dna -out {} -f phylip -bt rota -b 4 -t 1'
     command = command.format(alignment, args.output)
     ID = submit(command,
                 partition = 'savio',
                 account = 'co_rosalind',
                 qos = 'rosalind_savio_normal',
-                time = time,
+                time = str(minutes),
                 job_name = 'rate_partitioning',
                 cpus_per_task = 20,
                 mem_per_cpu = '3000')

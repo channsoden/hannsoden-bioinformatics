@@ -18,8 +18,11 @@ def multiple_alignment(args, fastas):
     basedir = os.getcwd()
     alignment = basedir+'/2_alignment/'+args.output+'.fasta'
     os.chdir('2_alignment')
-    
-    unaligned_fastas = [fasta for fasta in fastas if not os.path.isfile(trim_name(fasta))]
+
+    if args.force:
+        unaligned_fastas = fastas
+    else:
+        unaligned_fastas = [fasta for fasta in fastas if not os.path.isfile(trim_name(fasta))]
     if unaligned_fastas:
         chunk_size = (len(unaligned_fastas) / 4) + 1
         chunks = [unaligned_fastas[i:i+chunk_size] for i in [n * chunk_size for n in range(4)]]
@@ -58,7 +61,7 @@ def submit_alignment_batch(job):
 def align_trim(fasta):
     aligned = align_name(fasta)
     trimmed = trim_name(fasta)
-    mafft = sp.Popen('mafft --globalpair --maxiterate 1000 --jtt 10 --nuc --inputorder {} 1> {} 2> /dev/null'.format(fasta, aligned), shell=True)
+    mafft = sp.Popen('mafft --globalpair --maxiterate 1000 --jtt 10 --nuc --inputorder {} 1> {}'.format(fasta, aligned), shell=True)
     mafft.wait()
     trim_gap_ends(aligned, trimmed)
 

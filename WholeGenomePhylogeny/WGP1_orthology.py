@@ -66,7 +66,7 @@ def runmummer(args):
     queries = [genome for genome in args.genomes if not genome.split('/')[-1] == args.reference.split('/')[-1]]
     if not os.path.isdir('logs'):
         os.mkdir('logs')
-    mummer_runs = [[nucmer, [args.reference, genome, args.force]] for genome in queries]
+    mummer_runs = [[nucmer, [args.reference, genome], {'force':args.force}] for genome in queries]
     delta_files = mapPool(len(mummer_runs), mummer_runs)
 
     os.chdir(basedir)

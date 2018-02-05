@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 """
-WholeGenomePhylogeny.py is a pipeline for maximum likelihood phylogenetic inference from fasta formated genomes. It is written to run on the Berkeley Research Computing's (BRC) High Performance Computing (HPC) cluster, using the SLURM scheduler for process management and queueing within the shared computing environment.
+WholeGenomePhylogeny.py is a pipeline for maximum likelihood phylogenetic inference from fasta formated genomes. It is written to run on the Berkeley Research Computing's (BRC) High Performance Computing (HPC) cluster, Savio, using the SLURM scheduler for process management and queueing within the shared computing environment.
 
 Use option -h/--help for usage information.
 
@@ -10,15 +10,14 @@ Dependencies:
  - NumPy
  - MUMmer
  - MAFFT
- - PartitionFinder2
  - RAxML
  - ExaML
  - OpenMPI
  - ETE toolkit version 3
 
-Using the Anaconda2 distribution of Python is highly recommended. PartitionFinder2, in particular, relies on many non-standard Python modules. Conflicting installs of Python can cause errors when importing modules, so within the BRC HPC use 'module purge' prior to running.
+Using the Anaconda2 distribution of Python is highly recommended. Conflicting installs of Python can cause errors when importing modules, so within the BRC HPC use 'module purge' prior to running.
 
-Requires the following modules on the BRC HPC: raxml/8.1.17 gcc/4.8.5 openmpi/1.10.2-gcc
+Requires the following modules on Savio: python/2.7 raxml/8.1.17 gcc/4.8.5 openmpi/1.10.2-gcc
 """
 # Standard modules
 import argparse, os, sys, time, pickle

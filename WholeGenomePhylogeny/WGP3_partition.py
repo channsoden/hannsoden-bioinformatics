@@ -8,6 +8,7 @@ import os
 from fasta_tools import total_length
 from SLURM_tools import submit
 from SLURM_tools import job_wait
+import WGP_config as cfg
 
 def partition(args, alignment):
     basedir = os.getcwd()
@@ -33,13 +34,14 @@ def partition(args, alignment):
     command = 'tiger2 -in {} -a dna -out {} -f phylip -bt rota -b 4 -t 1'
     command = command.format(alignment, args.output)
     ID = submit(command,
-                partition = 'savio',
-                account = 'co_rosalind',
-                qos = 'rosalind_savio_normal',
-                time = str(minutes),
+                partition = cfg.SLURMpartition,
+                account = cfg.SLURMaccount,
+                qos = cfg.SLURMqos,
+                time = str(minutes)
                 job_name = 'rate_partitioning',
-                cpus_per_task = 20,
-                mem_per_cpu = '3000')
+                cpus_per_task = cfg.SLURMcpus,
+                mem_per_cpu = cfg.SLURMmem,
+                modules = [cfg.python])
     job_wait(ID)
     outfile = 'rate_partitioning_'+str(ID)+'.out'
     errfile = 'rate_partitioning_'+str(ID)+'.err'

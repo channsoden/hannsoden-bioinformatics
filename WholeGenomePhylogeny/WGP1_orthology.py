@@ -13,6 +13,7 @@ from Bio.Alphabet import DNAAlphabet
 import fasta_tools, mummer_tools
 from processing_tools import mapPool
 from SLURM_tools import submit, job_wait
+import WGP_config as cfg
 
 def orthology(args):
     # Find orthologous sequences between all genomes and write them to fasta files.
@@ -29,23 +30,21 @@ def orthology(args):
     #            job_name = 'py_ortho',
     #            cpus_per_task = 20,
     #            mem_per_cpu = '25G',
-    #            modules = ['biopython/1.64-2.7.8',
-    #                       'pandas/0.14.1'])
+    #            modules = [cfg.python])
     ID = submit(job,
-                partition = 'savio',
-                account = 'co_rosalind',
-                qos = 'rosalind_savio_normal',
-                time='12:0:0',
+                partition = cfg.SLURMpartition,
+                account = cfg.SLURMaccount,
+                qos = cfg.SLURMqos,
+                time = '12:0:0',
                 job_name = 'py_ortho',
-                cpus_per_task = 20,
-                mem_per_cpu = '3000',
-                modules = ['biopython/1.64-2.7.8',
-                           'pandas/0.14.1'])
+                cpus_per_task = cfg.SLURMcpus,
+                mem_per_cpu = cfg.SLURMmem,
+                modules = [cfg.python])
     job_wait(ID)
     out_file = 'py_ortho_'+str(ID)+'.out'
     err_file = 'py_ortho_'+str(ID)+'.err'
 
-    if not os.path.isfile('1_orthology/'+args.output+'.OS.txt') or args.force:
+    if not os.path.isfile('1_orthology/'+args.output+'.OS.txt'):
         exit_message = 'Orthology search failed.\n\n{}:\n{}'
         exit_message = exit_message.format(err_file, open(err_file, 'r').read())
         sys.stderr.write(exit_message)
@@ -55,6 +54,7 @@ def orthology(args):
     cleanup([out_file, err_file])
     return get_segments(args)
 
+
 def runmummer(args):
     basedir = os.getcwd()
     try:
@@ -63,47 +63,127 @@ def runmummer(args):
         pass
     os.chdir('1_orthology')
 
-    queries = [genome for genome in args.genomes if not genome.split('/')[-1] == args.reference.split('/')[-1]]
-    if not os.path.isdir('logs'):
-        os.mkdir('logs')
-    mummer_runs = [[nucmer, [args.reference, genome], {'force':args.force}] for genome in queries]
-    delta_files = mapPool(len(mummer_runs), mummer_runs)
+    existing, absent = find_mummer_files(args)
+    if absent:
+        try:
+            os.mkdir('logs')
+        except OSError:
+            pass
+
+        jobs = [(nucmer, [args.reference]+absence) for absence in absences]
+        esttime = '{}:0:0'.format(4 * (len(jobs) / cfg.SLURMcpus + 1)) # estimate 4 hours per query
+        ID = submit(jobs,
+                    pool=True
+                    partition = cfg.SLURMpartition,
+                    account = cfg.SLURMaccount,
+                    qos = cfg.SLURMqos,
+                    time=esttime,
+                    job_name = 'mummer',
+                    cpus_per_task = cfg.SLURMcpus,
+                    mem_per_cpu = cfg.SLURMmem,
+                    modules = [cfg.python])
+        job_wait(ID)
+
+        # all alignments should now exist
+        existing.extend(absent)
+
+    queries, prefixes, deltafiles, tempfiles, filterfiles = existing
 
     os.chdir(basedir)
-    return delta_files
-    
-def nucmer(reference, query, force=False):
-    prefix = os.path.splitext(os.path.basename(reference))[0] + '.' + os.path.splitext(os.path.basename(query))[0]
-    deltafile = prefix + '.delta'
-    tempfile = prefix + '.mgaps'
-    filterfile = deltafile + '.filtered'
-    first_try = force
-    while (not os.path.isfile(filterfile) or
-           os.stat(filterfile).st_size == 0 or
-           os.path.isfile(tempfile) or
-           first_try):
-        first_try = False
-        command_chain = ('nucmer -g 2000 --prefix={0} {1} {2}; '+
-                         'delta-filter -1 {3} -o 0 > {4};')
-        command_chain = command_chain.format(prefix, reference, query, deltafile, filterfile)
-        ID = submit(command_chain,
-                    partition='savio',
-                    account='co_rosalind',
-                    qos='rosalind_savio_normal',
-                    time='4:0:0',
-                    job_name = 'mummer',
-                    mem_per_cpu = '2G')
-        job_wait(ID)
-        outfile = 'mummer_'+str(ID)+'.out'
-        errfile = 'mummer_'+str(ID)+'.err'
+    return filterfiles
 
-        os.rename(outfile, 'logs/'+outfile)
-        os.rename(errfile, 'logs/'+errfile)
-        
-    if os.path.isfile(deltafile):
-        os.remove(deltafile)
-        
+def find_mummer_files(args):
+    existing = []
+    absent = []
+    for query in args.genomes:
+        if query.split('/')[-1] == args.reference.split('/')[-1]:
+            # This is the reference
+            continue
+
+        prefix = (os.path.splitext(os.path.basename(args.reference))[0] + \
+                  '.' + \
+                  os.path.splitext(os.path.basename(query))[0])
+        deltafile = prefix + '.delta'
+        tempfile = prefix + '.mgaps'
+        filterfile = deltafile + '.filtered'
+
+        group = [query, prefix, deltafile, tempfile, filterfile]
+
+        if (not os.path.isfile(filterfile) or
+            os.stat(filterfile).st_size == 0 or
+            os.path.isfile(tempfile) or
+            args.force):
+            absent.append(group)
+        else:
+            existing.append(group)
+
+    return existing, absent
+
+def nucmer(reference, query, prefix, deltafile, tempfile, filterfile):
+    errfile = prefix + '.err'
+    command_chain = ('{0} -g 2000 --prefix={1} {2} {3} 2> {4}; '+
+                     '{5} -1 {6} -o 0 1> {7} 2>> {4};')
+    command_chain = command_chain.format(cfg.nucmer, prefix, reference, query,
+                                         errfile, cfg.deltafilter, deltafile, filterfile)
+    sp.Popen(command_chain, shell=True)
+
+    os.rename(errfile, 'logs/'+errfile)
+    os.remove(deltafile)
+    os.remove(tempfile)
+
     return filterfile
+
+def find_orth(args):
+    # Get the names of the delta files
+    existing, absent = find_delta_files(args)
+    if absent_files:
+        queries, prefixes, deltafiles, tempfiles, filterfiles = absent
+        message = 'The following delta files could not be found/accessed: {}'
+        raise(message.format(filter_files))
+
+    basedir = os.getcwd()
+    os.chdir('1_orthology')
+
+    print 'Finding segments of the reference that have orthologous sequences in all queries (uni_shared_ref). . .'
+    # uni_shared_ref = {ref_scaf: [(start, end), (start, end), . . .], ref_scaf: [. . .], . . .}
+    jar = args.output+'.uni_shared_ref.pickle'
+    if not os.path.isfile(jar) or not os.path.isfile(args.output+'.OS.txt') or args.force:
+        ref_lens = fasta_tools.get_scaffold_lengths(args.reference)
+        # Make a list of endpoints of orthologous segments for each ref scaffold.
+        # The queries of endpoints are not differentiated, only starts and ends (negative).
+        # endpoints = [refstart, -refend, refstart, refstart, -refend, . . .]
+        endpoints = {key: [1, -value] for key, value in ref_lens.items()}
+        for df in delta_files:
+            endpoints = merge_endpoints(endpoints, get_endpoints(df))
+        # Sort endpoints, find segments where coverage == # of queries
+        uni_shared_ref = full_coverage(endpoints, len(delta_files)+1)
+        pickle.dump(uni_shared_ref, open(jar, 'wb'))
+    else:
+        uni_shared_ref = pickle.load(open(jar, 'rb'))    
+
+    num_segs, mean_size, total_orth = seg_stats(uni_shared_ref)
+    print 'Found {} orthologous segments totalling {} bp (mean {} bp).'.format(num_segs, total_orth, mean_size)
+    if not num_segs:
+        sys.exit('Aborting whole genome phylogeny: no orthologous segments found.')
+    elif total_orth < 10000:
+        sys.exit('Aborting whole genome phylogeny: too little orthology found.')
+    elif mean_size < 100:
+        sys.exit('Aborting whole genome phylogeny: orthologous segments too short.')
+    else:
+        pass
+
+    print 'Extracting and writing orthologous segments. . .'
+    # Go back to the alignment files, and for each uni segment use the alignments to write a fasta file
+    # containing the orthologous segments from each genome.
+    extract_orthologous_sequence(args.reference, delta_files, uni_shared_ref)
+
+    if os.path.isdir(basedir+'/2_alignment'):
+        [shutil.move(args.output+'.shared_alignment/'+f, basedir+'/2_alignment/'+f) for f in os.listdir(args.output+'.shared_alignment/')]
+        shutil.rmtree(args.output+'.shared_alignment/')
+    else:
+        os.rename(args.output+'.shared_alignment', basedir+'/2_alignment')
+
+    os.chdir(basedir)
 
 def merge_endpoints(endpointsA, endpointsB):
     for scaf, ends in endpointsB.items():
@@ -313,49 +393,4 @@ if __name__ == '__main__':
     with open(sys.argv[1], 'rb') as fh:
         args = pickle.load(fh)
 
-    # Get the names of the delta files
-    delta_files = runmummer(args)
-
-    basedir = os.getcwd()
-    os.chdir('1_orthology')
-
-    print 'Finding segments of the reference that have orthologous sequences in all queries (uni_shared_ref). . .'
-    # uni_shared_ref = {ref_scaf: [(start, end), (start, end), . . .], ref_scaf: [. . .], . . .}
-    jar = args.output+'.uni_shared_ref.pickle'
-    if not os.path.isfile(jar) or not os.path.isfile(args.output+'.OS.txt') or args.force:
-        ref_lens = fasta_tools.get_scaffold_lengths(args.reference)
-        # Make a list of endpoints of orthologous segments for each ref scaffold.
-        # The queries of endpoints are not differentiated, only starts and ends (negative).
-        # endpoints = [refstart, -refend, refstart, refstart, -refend, . . .]
-        endpoints = {key: [1, -value] for key, value in ref_lens.items()}
-        for df in delta_files:
-            endpoints = merge_endpoints(endpoints, get_endpoints(df))
-        # Sort endpoints, find segments where coverage == # of queries
-        uni_shared_ref = full_coverage(endpoints, len(delta_files)+1)
-        pickle.dump(uni_shared_ref, open(jar, 'wb'))
-    else:
-        uni_shared_ref = pickle.load(open(jar, 'rb'))    
-
-    num_segs, mean_size, total_orth = seg_stats(uni_shared_ref)
-    print 'Found {} orthologous segments totalling {} bp (mean {} bp).'.format(num_segs, total_orth, mean_size)
-    if not num_segs:
-        sys.exit('Aborting whole genome phylogeny: no orthologous segments found.')
-    elif total_orth < 10000:
-        sys.exit('Aborting whole genome phylogeny: too little orthology found.')
-    elif mean_size < 100:
-        sys.exit('Aborting whole genome phylogeny: orthologous segments too short.')
-    else:
-        pass
-        
-    print 'Extracting and writing orthologous segments. . .'
-    # Go back to the alignment files, and for each uni segment use the alignments to write a fasta file
-    # containing the orthologous segments from each genome.
-    extract_orthologous_sequence(args.reference, delta_files, uni_shared_ref)
-
-    if os.path.isdir(basedir+'/2_alignment'):
-        [shutil.move(args.output+'.shared_alignment/'+f, basedir+'/2_alignment/'+f) for f in os.listdir(args.output+'.shared_alignment/')]
-        shutil.rmtree(args.output+'.shared_alignment/')
-    else:
-        os.rename(args.output+'.shared_alignment', basedir+'/2_alignment')
-    
-    os.chdir(basedir)
+    find_ortho(args)

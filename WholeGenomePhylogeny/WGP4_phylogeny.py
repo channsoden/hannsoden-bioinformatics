@@ -6,10 +6,32 @@ import subprocess as sp
 # Nonstandard modules
 
 # My modules
+import WGP_config as cfg
 from SLURM_tools import submit
 from SLURM_tools import job_wait
 
 def phylogeny(args, partition_file, phylip):
+    picklefile = args.output+'.args.pickle'
+    job = '{} {} {} {}'.format(sys.executable, __file__, picklefile, partition_file, phylip)
+    submit_phylogeny(job)
+
+    tree = os.getcwd() + '/4_phylogeny/ExaML_result.' + args.output
+    return tree
+
+def submit_phylogeny(job):
+    ID = submit(job,
+                partition = cfg.SLURMpartition,
+                account = cfg.SLURMaccount,
+                qos = cfg.SLURMqos,
+                time = '12:0:0',
+                job_name = 'ExaML',
+                cpus_per_task = cfg.SLURMcpus,
+                mem_per_cpu = cfg.SLURMmem,
+                modules = [cfg.python, cfg.gcc, cfg.mpi])
+    job_wait(ID)
+    return ID
+
+def main(args, partition_file, phylip)
     random.seed(args.seed)
 
     basedir = os.getcwd()
@@ -30,12 +52,14 @@ def phylogeny(args, partition_file, phylip):
 
     os.chdir(basedir)
     return basedir+'/4_phylogeny/'+tree
-    
+
+
+
 def starting_tree(alignment_file):
     # Compute parsimony starting trees for each replicate in same manner as intial inference.
     outfile = alignment_file.split('/')[-1] + '.ST'
     randomseed = random.randint(1, 999999)
-    command = 'raxmlHPC-SSE3 -y -m GTRGAMMA -p {0} -s {1} -n {2}'.format(randomseed, alignment_file, outfile)
+    command = '{} -y -m GTRGAMMA -p {0} -s {1} -n {2}'.format(cfg.raxml, randomseed, alignment_file, outfile)
     parsimony = sp.Popen(command.split(), stdout=open('startingtree.out', 'a'), stderr=open('startingtree.err', 'a'))
     parsimony.wait()
     return 'RAxML_parsimonyTree.' + outfile
@@ -44,16 +68,14 @@ def parse_examl(alignment_file, partition_file):
     # Make an ExaML binary file from an alignment and partition
     outfile = alignment_file.split('/')[-1] + '.partitioned'
     outlog = 'parse_{}.out'.format(alignment_file.split('/')[-1].rsplit('.', 1)[0])
-    parser_path = '/global/scratch/hannsode/pkgs/ExaML-master/parser/parse-examl'
-    command = '{} -s {} -m DNA -q {} -n {}'.format(parser_path, alignment_file, partition_file, outfile)
+    command = '{} -s {} -m DNA -q {} -n {}'.format(cfg.parse_examl, alignment_file, partition_file, outfile)
     parsing = sp.Popen(command.split(), stdout=open(outlog, 'a'))
     parsing.wait()
     return outfile + '.binary'
 
 def examl(binary_alignment, startingtree, outprefix):
     randomseed = random.randint(1, 999999)
-    examl_path = '/global/scratch/hannsode/pkgs/ExaML-master/examl/examl-OMP-AVX'
-    command = '{} -s {} -n {} -m GAMMA -t {} -p {}'.format(examl_path, binary_alignment, outprefix, startingtree, randomseed)
+    command = '{} {} -n {} -m GAMMA -t {} -p {}'.format(cfg.examl, binary_alignment, outprefix, startingtree, randomseed)
     outlog = 'examl_{}.out'.format(outprefix)
     errlog = 'examl_{}.err'.format(outprefix)
     outfh = open(outlog, 'w')
@@ -79,3 +101,11 @@ def cleanup(logs=[], trash=[]):
         os.rename(log, 'logs/'+log)
     for f in trash:
         os.remove(f)
+
+if __name__ == '__main__':
+    with open(sys.argv[1], 'rb') as fh:
+        args = pickle.load(fh)
+
+    part_file = sys.argv[2]
+    phylip = sys.argv[3]
+    tree = main(args, partition_file, phylip)

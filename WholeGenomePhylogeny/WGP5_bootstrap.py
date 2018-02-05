@@ -19,15 +19,10 @@ def bootstrap(args, alignment, tree, reps = 100):
     bs_alignments = sample(alignment, reps)
 
     partition_jobs = [(partition, (args, bsa) ) for args, bsa in zip(bs_args, bs_alignments)]
-    part_results = mapPool(100, partition_jobs)
+    part_results = mapPool(reps, partition_jobs)
 
     phylo_jobs = [(phylogeny, (args, pr[0], pr[1])) for args, pr in zip(bs_args, part_results)]
-    ID = submit(phylo_jobs,
-                pool=True,
-                job_name='ExaML',
-                modules=['raxml/8.1.17'])
-    job_wait(ID)
-    bs_trees = get_trees(bs_args)
+    bs_trees = mapPool(reps, phylo_jobs)
 
     bs_tree = map_support(tree, bs_trees)
 
@@ -51,7 +46,7 @@ def sample(alignment, reps):
     longest = max(name_lens)
     heads = np.array([['>']+list(name)+[' ']*(longest-l)+['\n'] for name, l in zip(names, name_lens)])
     tails = np.array([['\n'] for name in names])
-    
+
     outfiles = []
     for i in range(reps):
         sample_idxs = np.random.choice(M, size=M, replace=True)
@@ -63,8 +58,6 @@ def sample(alignment, reps):
 
     return outfiles
     
-def get_trees(bs_args):
-    trees = ['4_phylogeny/'+'ExaML_result.'+args.output for args in bs_args]
 
 def map_support(tree_file, bs_tree_files):
     tree = Tree(tree_file)

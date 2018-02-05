@@ -17,7 +17,8 @@ Dependencies:
 
 Using the Anaconda2 distribution of Python is highly recommended. Conflicting installs of Python can cause errors when importing modules, so within the BRC HPC use 'module purge' prior to running.
 
-Requires the following modules on Savio: python/2.7 raxml/8.1.17 gcc/4.8.5 openmpi/1.10.2-gcc
+Requires the following modules on Savio: python gcc openmpi
+Module versions should be set in WGP_config.py
 """
 # Standard modules
 import argparse, os, sys, time, pickle

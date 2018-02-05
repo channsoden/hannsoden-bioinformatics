@@ -13,6 +13,7 @@ import fasta_tools
 from processing_tools import mapPool
 from SLURM_tools import submit
 from SLURM_tools import job_wait
+import WGP_config as cfg
 
 def multiple_alignment(args, fastas):
     basedir = os.getcwd()
@@ -47,14 +48,14 @@ def multiple_alignment(args, fastas):
 
 def submit_alignment_batch(job):
     ID = submit(job,
-                partition = 'savio',
-                account = 'co_rosalind',
-                qos = 'rosalind_savio_normal',
+                partition = cfg.SLURMpartition,
+                account = cfg.SLURMaccount,
+                qos = cfg.SLURMqos,
                 time = '12:0:0',
                 job_name = 'mafft',
-                cpus_per_task = 20,
-                mem_per_cpu = '3000')
-                #modules = ['biopython/1.64-2.7.8'])
+                cpus_per_task = cfg.SLURMcpus,
+                mem_per_cpu = cfg.SLURMmem,
+                modules = [cfg.python])
     job_wait(ID)
     return ID
 

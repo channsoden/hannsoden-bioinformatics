@@ -62,7 +62,9 @@ def submit_alignment_batch(job):
 def align_trim(fasta):
     aligned = align_name(fasta)
     trimmed = trim_name(fasta)
-    mafft = sp.Popen('mafft --globalpair --maxiterate 1000 --jtt 10 --nuc --inputorder {} 1> {}'.format(fasta, aligned), shell=True)
+    command = '{} --globalpair --maxiterate 1000 --jtt 10 --nuc --inputorder {} 1> {}'
+    command = command.format(cfg.mafft, fasta, aligned)
+    mafft = sp.Popen(command, shell=True)
     mafft.wait()
     trim_gap_ends(aligned, trimmed)
 

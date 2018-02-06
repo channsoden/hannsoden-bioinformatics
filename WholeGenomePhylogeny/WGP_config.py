@@ -1,8 +1,8 @@
 # Executables
 nucmer='nucmer'
 deltafilter='delta-filter'
-mafft=''
-partition=''
+mafft='mafft'
+tiger='tiger2'
 raxml='raxmlHPC-MPI-AVX'
 parse_examl='parse-examl'
 examl='examl-AVX'

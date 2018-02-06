@@ -31,8 +31,8 @@ def partition(args, alignment):
     estimated_runtime = int(estimated_patterns * 0.5)
     minutes = (estimated_runtime / 60) +1
 
-    command = 'tiger2 -in {} -a dna -out {} -f phylip -bt rota -b 4 -t 1'
-    command = command.format(alignment, args.output)
+    command = '{} -in {} -a dna -out {} -f phylip -bt rota -b 4 -t 1'
+    command = command.format(cfg.tiger, alignment, args.output)
     ID = submit(command,
                 partition = cfg.SLURMpartition,
                 account = cfg.SLURMaccount,

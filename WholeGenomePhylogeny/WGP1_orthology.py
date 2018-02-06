@@ -1,4 +1,4 @@
-#!/global/scratch/hannsode/pkgs/anaconda2/bin/python
+#!/usr/bin/env python
 # Standard modules
 import sys, os, shutil, pickle
 from bisect import bisect_right

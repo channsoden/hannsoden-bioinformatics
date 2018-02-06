@@ -1,4 +1,4 @@
-#!/global/scratch/hannsode/pkgs/anaconda2/bin/python
+#!/usr/bin/env python
 # Standard modules
 import os
 
@@ -37,7 +37,7 @@ def partition(args, alignment):
                 partition = cfg.SLURMpartition,
                 account = cfg.SLURMaccount,
                 qos = cfg.SLURMqos,
-                time = str(minutes)
+                time = str(minutes),
                 job_name = 'rate_partitioning',
                 cpus_per_task = cfg.SLURMcpus,
                 mem_per_cpu = cfg.SLURMmem,

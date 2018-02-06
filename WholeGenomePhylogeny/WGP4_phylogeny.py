@@ -1,4 +1,4 @@
-#!/global/scratch/hannsode/pkgs/anaconda2/bin/python
+#!/usr/bin/env python
 # Standard modules
 import os, random, sys
 import subprocess as sp
@@ -31,7 +31,7 @@ def submit_phylogeny(job):
     job_wait(ID)
     return ID
 
-def main(args, partition_file, phylip)
+def main(args, partition_file, phylip):
     random.seed(args.seed)
 
     basedir = os.getcwd()

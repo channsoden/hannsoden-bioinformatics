@@ -42,6 +42,7 @@ def submit(job,
                '--nodes':nodes, '--tasks-per-node':tasks_per_node,
                '--cpus-per-task':cpus_per_task, '--mem-per-cpu':mem_per_cpu,
                '--mail-type':mail_type, '--mail-user':mail_user, '--account':account}
+    options = {k:v for k, v in options.items() if v} # remove options set to None
 
     opt_string = ''
     for option, value in options.items():

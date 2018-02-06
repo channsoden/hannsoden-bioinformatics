@@ -27,7 +27,7 @@ def submit_phylogeny(job):
                 job_name = 'ExaML',
                 cpus_per_task = cfg.SLURMcpus,
                 mem_per_cpu = cfg.SLURMmem,
-                modules = [cfg.python, cfg.gcc, cfg.mpi])
+                modules = cfg.modules)
     job_wait(ID)
     return ID
 

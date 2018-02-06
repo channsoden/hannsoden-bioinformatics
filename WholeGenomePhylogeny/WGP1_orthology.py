@@ -30,7 +30,7 @@ def orthology(args):
     #            job_name = 'py_ortho',
     #            cpus_per_task = 20,
     #            mem_per_cpu = '25G',
-    #            modules = [cfg.python])
+    #            modules = cfg.modules)
     ID = submit(job,
                 partition = cfg.SLURMpartition,
                 account = cfg.SLURMaccount,
@@ -39,7 +39,7 @@ def orthology(args):
                 job_name = 'py_ortho',
                 cpus_per_task = cfg.SLURMcpus,
                 mem_per_cpu = cfg.SLURMmem,
-                modules = [cfg.python])
+                modules = cfg.modules)
     job_wait(ID)
     out_file = 'py_ortho_'+str(ID)+'.out'
     err_file = 'py_ortho_'+str(ID)+'.err'
@@ -81,7 +81,7 @@ def runmummer(args):
                     job_name = 'mummer',
                     cpus_per_task = cfg.SLURMcpus,
                     mem_per_cpu = cfg.SLURMmem,
-                    modules = [cfg.python])
+                    modules = cfg.modules)
         job_wait(ID)
 
         # all alignments should now exist

@@ -15,7 +15,5 @@ SLURMnodes=4 # max number of nodes to utilize
 SLURMcpus=20 # number of CPUs per node
 SLURMmem=3000 # memory (in MBi) per CPU (should be at least 2000)
 
-# Modules
-python='python/2.7.14' # needs biopython, numpy, ete3
-gcc='gcc/6.3.0'
-mpi='openmpi/2.0.2-gcc'
+# Python version needs biopython, numpy, ete3
+modules = ['python/2.7.14', 'gcc/6.3.0', 'openmpi/2.0.2-gcc']

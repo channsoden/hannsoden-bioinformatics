@@ -41,7 +41,7 @@ def partition(args, alignment):
                 job_name = 'rate_partitioning',
                 cpus_per_task = cfg.SLURMcpus,
                 mem_per_cpu = cfg.SLURMmem,
-                modules = [cfg.python])
+                modules = cfg.modules)
     job_wait(ID)
     outfile = 'rate_partitioning_'+str(ID)+'.out'
     errfile = 'rate_partitioning_'+str(ID)+'.err'

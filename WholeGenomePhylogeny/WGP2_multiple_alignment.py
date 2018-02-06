@@ -55,7 +55,7 @@ def submit_alignment_batch(job):
                 job_name = 'mafft',
                 cpus_per_task = cfg.SLURMcpus,
                 mem_per_cpu = cfg.SLURMmem,
-                modules = [cfg.python])
+                modules = cfg.modules)
     job_wait(ID)
     return ID
 

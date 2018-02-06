@@ -73,7 +73,7 @@ def runmummer(args):
         jobs = [(nucmer, [args.reference]+absence) for absence in absences]
         esttime = '{}:0:0'.format(4 * (len(jobs) / cfg.SLURMcpus + 1)) # estimate 4 hours per query
         ID = submit(jobs,
-                    pool=True
+                    pool=True,
                     partition = cfg.SLURMpartition,
                     account = cfg.SLURMaccount,
                     qos = cfg.SLURMqos,

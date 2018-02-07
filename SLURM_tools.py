@@ -85,6 +85,7 @@ def submit(job,
     submission = sp.Popen(command, shell=True,
                           stdout=sp.PIPE, stderr=sp.PIPE, stdin=sp.PIPE)
     job = '#!/bin/{}\n{}{}'.format(shell, mod_string, job)
+
     out, err = submission.communicate(input = job)
     if err:
         sys.exit(err)

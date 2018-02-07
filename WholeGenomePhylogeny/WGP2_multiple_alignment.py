@@ -20,28 +20,31 @@ def multiple_alignment(args, fastas):
     alignment = basedir+'/2_alignment/'+args.output+'.fasta'
     os.chdir('2_alignment')
 
-    if args.force:
-        unaligned_fastas = fastas
-    else:
-        unaligned_fastas = [fasta for fasta in fastas if not os.path.isfile(trim_name(fasta))]
-    if unaligned_fastas:
-        chunk_size = (len(unaligned_fastas) / 4) + 1
-        chunks = [unaligned_fastas[i:i+chunk_size] for i in [n * chunk_size for n in range(4)]]
-        # Run this script with list of fastas as args
-        jobs = [(submit_alignment_batch, ['{} {} {}'.format(sys.executable, __file__, ' '.join(chunk))])
-                for chunk in chunks]
-        IDs = mapPool(4, jobs)
-        outfiles = ['mafft_'+str(ID)+'.out' for ID in IDs]
-        errfiles = ['mafft_'+str(ID)+'.err' for ID in IDs]
-    else:
-        outfiles = []
-        errfiles = []
+    if not os.path.isfile(alignment) or args.force:
+        if args.force:
+            unaligned_fastas = fastas
+        else:
+            unaligned_fastas = [fasta for fasta in fastas if not os.path.isfile(trim_name(fasta))]
 
-    aligned = [align_name(fasta) for fasta in fastas] # Intermediate files from the alignment process.
-    aligned_trimmed = [trim_name(fasta) for fasta in fastas] # The output files from the aligment process.
-    concatenate_fasta(aligned_trimmed, alignment)
+        if unaligned_fastas:
+            chunk_size = (len(unaligned_fastas) / 4) + 1
+            chunks = [unaligned_fastas[i:i+chunk_size] for i in [n * chunk_size for n in range(4)]]
+            # Run this script with list of fastas as args
+            jobs = [(submit_alignment_batch, ['{} {} {}'.format(sys.executable, __file__, ' '.join(chunk))])
+                    for chunk in chunks]
+            IDs = mapPool(4, jobs)
+            outfiles = ['mafft_'+str(ID)+'.out' for ID in IDs]
+            errfiles = ['mafft_'+str(ID)+'.err' for ID in IDs]
+        else:
+            outfiles = []
+            errfiles = []
 
-    cleanup(logs=outfiles+errfiles, trash=fastas+aligned+aligned_trimmed)
+        aligned = [align_name(fasta) for fasta in fastas] # Intermediate files from the alignment process.
+        aligned_trimmed = [trim_name(fasta) for fasta in fastas] # The output files from the aligment process.
+
+        concatenate_fasta(aligned_trimmed, alignment)
+
+        cleanup(logs=outfiles+errfiles, trash=fastas+aligned+aligned_trimmed)
 
     os.chdir(basedir)
     return alignment
@@ -177,7 +180,10 @@ def cleanup(logs=[], trash=[]):
     for log in logs:
         os.rename(log, 'logs/'+log)
     for f in trash:
-        os.remove(f)
+        try:
+            os.remove(f)
+        except OSError:
+            pass
 
 if __name__ == '__main__':
     fastas = sys.argv[1:]

@@ -45,7 +45,7 @@ __status__ = "Development"
 
 def parse_arguments():
     parser = argparse.ArgumentParser(description='Generates a whole genome maximum likelihood phylogeny from a list of fasta genomes.')
-    parser.add_argument('-r', '--reference', type=str, required=True, help='path to reference genome')
+    parser.add_argument('-r', '--reference', type=str, help='path to reference genome')
     parser.add_argument('-s', '--step', type=int, default=1, help='step of pipeline to start on')
     parser.add_argument('-e', '--seed', type=int, default=time.time(), help='set pseudo-random seed for reproducable results')
     parser.add_argument('-o', '--output', type=str, default='WGP_analysis', help='name stub for output files')
@@ -61,9 +61,12 @@ def parse_arguments():
         args = pickle.load( open(args.output+'.args.pickle', 'rb') )
         return args
 
+    if not args.reference:
+        raise Exception('Please specify a reference genome with -r.')
+
     if args.force:
         args.step = 1
-    
+
     if args.genomes and args.dataset:
         raise Exception('Either provide a list of fasta genomes or name a dataset with -d, not both.')
     elif not args.genomes and args.dataset:
@@ -92,7 +95,11 @@ def main(args):
             # Orthology search must have failed
             return None
         print 'Finished orthology search'
-        os.remove('1_orthology/'+args.output+'.uni_shared_ref.pickle')
+        try:
+            os.remove('1_orthology/'+args.output+'.uni_shared_ref.pickle')
+        except OSError:
+            # must have skipped this step, using result from previous run
+            pass
         args.step += 1
 
     if args.step == 2:

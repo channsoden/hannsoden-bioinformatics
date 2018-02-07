@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # Standard modules
-import os
+import os, sys
 
 # Nonstandard modules
 
@@ -30,17 +30,22 @@ def partition(args, alignment):
     estimated_patterns = pps * sites
     estimated_runtime = int(estimated_patterns * 0.5)
     minutes = (estimated_runtime / 60) +1
+    if minutes > (cfg.LARGEmaxtime * 60):
+        warning = "Warning: estimated partition time ({}) is greater than maximum wallclock time ({}).\n"
+        warning = warning.format(minutes, cfg.LARGEmaxtime * 60)
+        sys.stderr.write(warning)
+        minutes = cfg.LARGEmaxtime * 60
 
     command = '{} -in {} -a dna -out {} -f phylip -bt rota -b 4 -t 1'
     command = command.format(cfg.tiger, alignment, args.output)
     ID = submit(command,
-                partition = cfg.SLURMpartition,
-                account = cfg.SLURMaccount,
-                qos = cfg.SLURMqos,
+                partition = cfg.LARGEpartition,
+                account = cfg.LARGEaccount,
+                qos = cfg.LARGEqos,
                 time = str(minutes),
                 job_name = 'rate_partitioning',
-                cpus_per_task = cfg.SLURMcpus,
-                mem_per_cpu = cfg.SLURMmem,
+                cpus_per_task = cfg.LARGEcpus,
+                mem_per_cpu = cfg.LARGEmem,
                 modules = cfg.modules)
     job_wait(ID)
     outfile = 'rate_partitioning_'+str(ID)+'.out'

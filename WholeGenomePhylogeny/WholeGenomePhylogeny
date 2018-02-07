@@ -10,8 +10,7 @@ Dependencies:
  - NumPy
  - MUMmer
  - MAFFT
- - RAxML
- - ExaML
+ - IQ-Tree
  - OpenMPI
  - ETE toolkit version 3
 
@@ -32,7 +31,6 @@ from WGP1_orthology import orthology
 from WGP2_multiple_alignment import multiple_alignment
 from WGP3_partition import partition
 from WGP4_phylogeny import phylogeny
-from WGP5_bootstrap import bootstrap
 
 __author__ = "Christopher Hann-Soden"
 __copyright__ = "Copyright 2016, Christopher Hann-Soden"
@@ -81,7 +79,7 @@ def parse_arguments():
         pass
     else:
         raise Exception('Either a dataset must be provided with -d or a list of fasta formatted genomes.')
-        
+    
     return args
 
 def main(args):
@@ -120,16 +118,9 @@ def main(args):
         print 'Finished ML tree optimization'
         args.step += 1
 
-    if args.step == 5:
-        if args.bootstrap:
-            bs_tree = bootstrap(args, alignment, tree)
-        else:
-            bs_tree = tree
-        args.step += 1
-        
     print 'Completed whole genome phylogenetic analysis.'
     os.remove(args.output+'.args.pickle')
-    return bs_tree
+    return tree
 
 if __name__ == '__main__':
     args = parse_arguments()

@@ -21,6 +21,14 @@ def partition(args, alignment):
     phylip_file = args.output + '.phylip'
     partition_file = args.output + '.partitions.txt'
 
+    if (not os.path.isfile(phylip_file) or
+        not os.path.isfile(partition_file)):
+        submit_tiger2(args, alignment)
+
+    os.chdir(basedir)
+    return basedir+'/3_partitioning/'+partition_file, basedir+'/3_partitioning/'+phylip_file
+
+def submit_tiger2(args, alignment):
     # Rate partitioning usually takes under 0.5s per unique pattern
     # in the alignment. There is no fast way to know how many unique
     # patterns there will be in an alignment of a given size.
@@ -48,12 +56,10 @@ def partition(args, alignment):
                 mem_per_cpu = cfg.LARGEmem,
                 modules = cfg.modules)
     job_wait(ID)
+
     outfile = 'rate_partitioning_'+str(ID)+'.out'
     errfile = 'rate_partitioning_'+str(ID)+'.err'
-
-    os.chdir(basedir)
     cleanup([outfile, errfile])
-    return basedir+'/3_partitioning/'+partition_file, basedir+'/3_partitioning/'+phylip_file
 
 def cleanup(logs):
     try:

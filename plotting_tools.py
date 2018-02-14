@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+import math
 from matplotlib import pyplot as plt
 import numpy as np
 
@@ -125,3 +126,8 @@ def figure_add_alpha(previous, target):
     # when layered upon previous alpha value
     actual = (target - previous) / (1 - previous)
     return actual
+
+def square_grid(nplots):
+    columns = math.floor( math.sqrt(nplots) )
+    rows = math.ceil(nplots / columns)
+    return int(columns), int(rows)

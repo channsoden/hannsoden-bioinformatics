@@ -17,6 +17,11 @@ def phylogeny(args, partition_file, phylip):
         pass
     os.chdir('4_phylogeny')
 
+    os.symlink(partition_file, partition_file.split('/')[-1])
+    os.symlink(phylip, phylip.split('/')[-1])
+    partition_file = partition_file.split('/')[-1]
+    phylip = phylip.split('/')[-1]
+
     tree = partition_file + '.treefile'
 
     if not os.path.isfile(tree):
@@ -38,7 +43,7 @@ def phylogeny(args, partition_file, phylip):
         cleanup(logs=[out, err])
 
     os.chdir(basedir)
-    return tree
+    return '4_phylogeny/'+tree
 
 def cleanup(logs=[], trash=[]):
     try:

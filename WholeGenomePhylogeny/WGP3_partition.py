@@ -32,7 +32,7 @@ def submit_tiger2(args, alignment):
     # Rate partitioning usually takes under 0.5s per unique pattern
     # in the alignment. There is no fast way to know how many unique
     # patterns there will be in an alignment of a given size.
-    pps = 0.05 # empirical guess of high patterns per site
+    pps = 0.1 # empirical guess of high patterns per site # 0.05 for most, 0.1 for extremely diverse clade N. rajui
     records = len(args.genomes)
     sites = total_length(alignment) / records
     estimated_patterns = pps * sites
@@ -63,8 +63,8 @@ def submit_tiger2(args, alignment):
 
 def cleanup(logs):
     try:
-        os.mkdir('3_partitioning/logs')
+        os.mkdir('logs')
     except OSError:
         pass
     for log in logs:
-        os.rename('3_partitioning/'+log, '3_partitioning/logs/'+log)
+        os.rename(log, 'logs/'+log)

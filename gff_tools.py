@@ -1,6 +1,7 @@
 #!/usr/bin/env python
-import sys
-import fileinput
+import sys, fileinput
+from cStringIO import StringIO
+import pandas as pd
 
 class gff_feature:
     def __init__(self, gff_feature_line):
@@ -23,8 +24,7 @@ class gff_feature:
 def parse_gff(gffFile):
     gffFH = open(gffFile, 'r')
 
-    while True:
-        line = gffFH.readline()
+    for line in gffFH:
         if not line.strip() or line.strip() == '##FASTA':
             break
         elif line[0] == '#':
@@ -32,3 +32,19 @@ def parse_gff(gffFile):
         else:
             yield gff_feature(line)
 
+def gff_table(gffFile):
+    fh = open(gffFile, 'r')
+    table_form = []
+    for line in fh:
+        if not line.strip() or line.strip() == '##FASTA':
+            break
+        elif line[0] == '#':
+            pass
+        else:
+            line = line.split('#')[0].strip() # remove comments
+            table_form.append(line)
+    table_form = '\n'.join(table_form)
+    table_form = StringIO(table_form)
+    header = ['seqname', 'source', 'feature', 'start', 'end', 'score', 'strand', 'frame', 'attributes']
+    df = pd.read_csv(table_form, sep='\t', names=header)
+    return df

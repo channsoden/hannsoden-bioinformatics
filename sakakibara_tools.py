@@ -7,9 +7,7 @@ import subprocess as sp
 import pandas as pd
 
 # My modules
-from SLURM_tools import submit, job_wait
 from fasta_tools import get_absolute_positions
-import sakakibara_tools_config as cfg
 
 def murasaki_pairwise(pair, outdir, outprefix, weight = 28, length = 36):
     anchors = '{}/{}.anchors'.format(outdir, outprefix)

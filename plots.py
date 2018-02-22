@@ -150,7 +150,7 @@ class regression_plot(object):
             line = '{}{}'.format(insig_style, insig_color)
 
         regressx = np.linspace(min(self.x), max(self.x), num=100)
-        prediction = self.regressx * self.slope + self.intercept
+        prediction = regressx * self.slope + self.intercept
         if logy:
             prediction = np.log10(prediction)
         ax.plot(regressx, prediction, line)

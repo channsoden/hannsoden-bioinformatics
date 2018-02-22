@@ -149,10 +149,11 @@ class regression_plot(object):
         else:
             line = '{}{}'.format(insig_style, insig_color)
 
-        prediction = self.x * self.slope + self.intercept
+        regressx = np.linspace(min(self.x), max(self.x), num=100)
+        prediction = self.regressx * self.slope + self.intercept
         if logy:
             prediction = np.log10(prediction)
-        ax.plot(X, prediction, line)
+        ax.plot(regressx, prediction, line)
         if fit_report_location:
             fit_report = 'R2 = {:.4f}\np = {:.3E}'.format(self.r2, self.p_val)
             left, right = ax.get_xlim()

@@ -151,6 +151,8 @@ class regression_plot(object):
 
         regressx = np.linspace(min(self.x), max(self.x), num=100)
         prediction = regressx * self.slope + self.intercept
+        if logx:
+            regressx = np.log10(regressx)
         if logy:
             prediction = np.log10(prediction)
         ax.plot(regressx, prediction, line)

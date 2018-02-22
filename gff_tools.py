@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 import sys, fileinput
-from cStringIO import StringIO
+from io import StringIO
 import pandas as pd
 
 class gff_feature:

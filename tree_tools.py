@@ -72,5 +72,5 @@ if __name__ == '__main__':
     tree_file = sys.argv[1]
     tree = Tree(tree_file)
 
-    change_names(tree, {v:k for k, v in summer2016_neurospora.items()})
+    change_names(tree, {v:k for k, v in list(summer2016_neurospora.items())})
     simplify(tree, tree_file+'.simple')

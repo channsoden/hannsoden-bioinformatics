@@ -66,7 +66,7 @@ def enumerate_minimal_covers(clique_matrix, threads = 1):
     elements = order_minimals(elements)
     islands = split_disconnected(elements)
     parts = [(minimal_covers, island) for island in islands]
-    partial_covers, partial_chains = zip(*mapPool(threads, parts))
+    partial_covers, partial_chains = list(zip(*mapPool(threads, parts)))
     covers = merge_disconnected(partial_covers)
     return covers
 
@@ -87,7 +87,7 @@ class counter(object):
     def tick(self):
         self.count += 1
         if not self.count % 10000:
-            print '. . . {} recursive calls made'.format(self.count)
+            print('. . . {} recursive calls made'.format(self.count))
     
 def get_duals(Y, n):
     """Y is a clique matrix.
@@ -148,7 +148,7 @@ def minimal_covers(minimals, m, last_clique=[], last_element=[], effort=None):
         # Top level
         if m > 30:
             effort = counter(1)
-            print 'attempting to enumerate minimals covers with m = {}'.format(m)
+            print('attempting to enumerate minimals covers with m = {}'.format(m))
             
         minimals, simplicial_elements, essential_cliques = remove_simplicial(minimals)
 
@@ -215,7 +215,7 @@ def split_disconnected(elements):
             islands.append([element])
         i = element.max
     sizes.append(1 + islands[-1][-1].max - islands[-1][0].min)
-    return zip(islands, sizes)
+    return list(zip(islands, sizes))
 
 def merge_disconnected(partial_covers):
     """Combines partial results for each disconnected region of the interval graph into the full set of all covers."""
@@ -225,4 +225,4 @@ def merge_disconnected(partial_covers):
 
 
 if __name__ == '__main__':
-    print enumerate_minimal_covers(test_data)
+    print(enumerate_minimal_covers(test_data))

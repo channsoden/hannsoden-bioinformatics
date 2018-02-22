@@ -53,7 +53,7 @@ def main(interopDirs):
         # Calculate the mean and 10th percentile Q-scores at each cycle, then plot them in a line graph.
         lineseries_R1 = {}
         lineseries_R2 = {}
-        for path, interop in interOp_data.items():
+        for path, interop in list(interOp_data.items()):
             lineseries_R1[path] = interop_meanNth_Q_by_position(interop[0], args.percentile)
             if len(interop) == 2:
                 lineseries_R2[path] = interop_meanNth_Q_by_position(interop[1], args.percentile)
@@ -63,7 +63,7 @@ def main(interopDirs):
 
     if not args.graphs:
         # Generate ART read profiles for each InterOp dataset.
-        for path, interop in interOp_data.items():
+        for path, interop in list(interOp_data.items()):
             if len(interop) == 2:
                 art_profile(interop[0], path+path[:-1]+'_R1.profile')
                 art_profile(interop[1], path+path[:-1]+'_R2.profile')
@@ -128,9 +128,9 @@ def parse_QMetrics(QM_file, cycles):
         remapped_scores = list(struct.unpack('B'*bins, qmfh.read(bins)))
     else:
         bins = 50
-        lower_bounds = range(1,50)
-        upper_bounds = range(1,50)
-        remapped_scores = range(1,51)
+        lower_bounds = list(range(1,50))
+        upper_bounds = list(range(1,50))
+        remapped_scores = list(range(1,51))
 
     Qdist = [np.zeros(bins, dtype=int) for x in range(cycles)]
 
@@ -151,14 +151,14 @@ def parse_QMetrics(QM_file, cycles):
     for i, dist in enumerate(Qdist):
         if list(dist) == [0] * bins:
             # There exists a cycle for which no quality scores are recorded. This isn't right.
-            print 'cycle', i+1
+            print('cycle', i+1)
             sys.exit('Invalid Data: The file {} is missing data for cycle {} - aborting.'.format(QM_file, i+1))
 
     # Set the remapped scores as keys for the bins
     # Qdist[4][2] is the second bin in cycle 4
     # if remapped_scores == [7, 12, 17, 22, 27, 32, 37, 41]
     # then the second bin represents the counts of Q-score == 12
-    Qdist = [dict(zip(remapped_scores, dist)) for dist in Qdist]
+    Qdist = [dict(list(zip(remapped_scores, dist))) for dist in Qdist]
 
     return Qdist
 
@@ -178,12 +178,12 @@ def interop_meanNth_Q_by_position(qualdists, N):
     # Return an ordered list of the mean and Nth percentile Q-scores for each cycle in an Illumina run from an InterOp dataset.
     means = [hist_mean(qualdist) for qualdist in qualdists]
     tenths = [hist_percentile(qualdist, N) for qualdist in qualdists]
-    return zip(means, tenths)
+    return list(zip(means, tenths))
 
 def hist_mean(histogram):
     # Takes a histogram style dictionary, with some values as keys, and the frequencies of occurance of those values as values.
     # Returns the mean value of the distribution.
-    stacks = [key * value for key, value in histogram.items()]
+    stacks = [key * value for key, value in list(histogram.items())]
     N = float(sum(histogram.values()))
     total = float(sum(stacks))
     return (total / N)
@@ -193,7 +193,7 @@ def hist_percentile(histogram, percent):
     # Returns Nth percentile of the distribution (i.e. N% of occurances are at less than this value).
     total = sum(histogram.values())
     Nth = total * percent / 100
-    values = histogram.keys()
+    values = list(histogram.keys())
     values.sort()
     pos = 0
     for value in values:
@@ -216,7 +216,7 @@ def linegraph(series_dict, output_name):
     # Tableu Color Blind 10 scheme
     colors = [(255,128,14), (171,171,171), (95,158,209), (89,89,89), (0,107,164),
               (255,188,121), (207,207,207), (200,82,0), (162,200,236), (137,137,137)]
-    colors = [map(lambda x: x/255., triplet) for triplet in colors]
+    colors = [[x/255. for x in triplet] for triplet in colors]
 
     legend_styles = []
     legend_labels = []
@@ -249,9 +249,9 @@ def art_profile(qualdist, outfile):
 
     for base in bases:
         for i, cycle in enumerate(qualdist):
-            reduced = {key: value for key, value in cycle.items() if value != 0}
-            line1 = [base] + [str(i)] + map(str, sorted(reduced.keys()))
-            line2 = [base] + [str(i)] + map(lambda x: str(x) if base == '.' else str(x/4), [cycle[Qscore] for Qscore in sorted(reduced.keys())])
+            reduced = {key: value for key, value in list(cycle.items()) if value != 0}
+            line1 = [base] + [str(i)] + list(map(str, sorted(reduced.keys())))
+            line2 = [base] + [str(i)] + [str(x) if base == '.' else str(x/4) for x in [cycle[Qscore] for Qscore in sorted(reduced.keys())]]
             outfh.write('\t'.join(line1) + '\n')
             outfh.write('\t'.join(line2) + '\n')
 

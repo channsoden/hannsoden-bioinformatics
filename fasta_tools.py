@@ -21,7 +21,7 @@ def get_absolute_positions(fastafile, base=0):
 def get_scaffold_lengths(fastafile):
     """Opens and reads a fasta formated genome and returns a dictionary with sequence names as keys and the length of the sequence as values."""
     records = fasta_to_dict(fastafile)
-    d = {key: len(rec) for key, rec in records.items()}
+    d = {key: len(rec) for key, rec in list(records.items())}
     return d
 
 def seq_length_list(fastafile):
@@ -39,7 +39,7 @@ def total_length(fastafile):
     grep = sp.Popen(['grep', '-v', '">"', fastafile], stdout=sp.PIPE)
     wc = sp.Popen(['wc'], stdin=grep.stdout, stdout=sp.PIPE)
     out, err = wc.communicate()
-    lines, words, characters = map(int, out.split())
+    lines, words, characters = list(map(int, out.split()))
     return characters - lines
 
 def fasta_to_dict(fastafile):
@@ -75,7 +75,7 @@ def wrap_fasta(fasta_file, out_file = '', N = 80):
 def fasta_to_phylip(fastafile):
     # Bio.AlignIO.write puts spaces in the sequence blocks that break some tools.
     records = fasta_to_dict(fastafile)
-    seq_len = max([len(seq) for seq in records.values()])
+    seq_len = max([len(seq) for seq in list(records.values())])
 
     outfile = fastafile.split('/')[-1].rsplit('.', 1)[0] + '.phy'
     outfh = open(outfile, 'w')
@@ -84,7 +84,7 @@ def fasta_to_phylip(fastafile):
     outfh.write(' {} {}\n'.format(len(records), seq_len))
     
     # Print the first block.
-    names = records.keys()
+    names = list(records.keys())
     name_length = max([len(name) for name in names]) + 2
     for name in names:
         outfh.write(name + ' ' * (name_length - len(name)))

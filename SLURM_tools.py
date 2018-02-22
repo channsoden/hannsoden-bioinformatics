@@ -42,10 +42,10 @@ def submit(job,
                '--nodes':nodes, '--tasks-per-node':tasks_per_node,
                '--cpus-per-task':cpus_per_task, '--mem-per-cpu':mem_per_cpu,
                '--mail-type':mail_type, '--mail-user':mail_user, '--account':account}
-    options = {k:v for k, v in options.items() if v} # remove options set to None
+    options = {k:v for k, v in list(options.items()) if v} # remove options set to None
 
     opt_string = ''
-    for option, value in options.items():
+    for option, value in list(options.items()):
         opt_string = add_option(opt_string, option, value)
     command = 'sbatch '+opt_string
 
@@ -92,7 +92,7 @@ def submit(job,
     else:
         jobID = out.strip().split()[-1]
         if verbose:
-            print 'Submitted: {}'.format(jobID)
+            print('Submitted: {}'.format(jobID))
         return jobID
     
 def submit_script(job):
@@ -124,6 +124,6 @@ def job_wait(jobID, period=60, verbose=True):
         unfinished = not check_job(jobID)
         time.sleep(period)
     if verbose:
-        print 'Completed: {}'.format(jobID)
+        print('Completed: {}'.format(jobID))
 
 

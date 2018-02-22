@@ -26,7 +26,7 @@ def pretty_bar(ax, data, labels, title=None, shift = 0, barwidth=0.5, barcolor='
     # Matplotlib assumes you have numerical data for both axes
     # But for the X axis, we have categorical data
     # So we need to plug in a range of numbers to place the bars at
-    x = range(len(data))
+    x = list(range(len(data)))
     x = [i + shift for i in x]
 
     # Bars will appear at 0, 1, 2, etc
@@ -73,10 +73,10 @@ def manhattan(ax, positions, p_vals, scaffold_positions, color = 'black', sig = 
 
     max_y = int(max(p_vals)) + 1
     ax.set_ylim(-0.3, max_y)
-    yticks = range(max_y + 1)
+    yticks = list(range(max_y + 1))
     ax.set_yticks(yticks)
 
-    xtick_labels = sorted(scaffold_positions.keys(), key=lambda k: scaffold_positions[k])
+    xtick_labels = sorted(list(scaffold_positions.keys()), key=lambda k: scaffold_positions[k])
     xticks = [scaffold_positions[k] for k in xtick_labels]
     label_locations = [(xticks[i]+xticks[i+1])/2. for i in range(len(xticks)-1)]
     ax.set_xlim(0, max(xticks))

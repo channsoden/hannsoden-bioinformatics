@@ -12,12 +12,12 @@ from fasta_tools import get_absolute_positions
 def murasaki_pairwise(pair, outdir, outprefix, weight = 28, length = 36):
     anchors = '{}/{}.anchors'.format(outdir, outprefix)
     if not os.path.isfile(anchors):
-        genomes = ' '.join(pair.values())
+        genomes = ' '.join(list(pair.values()))
         command = "mpirun -np 1 murasaki -p[{}:{}] -d {} -n {} -H2 {}".format(weight, length, outdir, outprefix, genomes)
         # if it's taking forever try -m [int] to skip hashes that appear [int] times
         sp.Popen(command, shell=True).wait()
     else:
-        print 'Murasaki output already present at {}: using existing file.'.format(anchors)
+        print('Murasaki output already present at {}: using existing file.'.format(anchors))
     return anchors
 
 def abs_to_rel(anchors, outfile, verbose = True):
@@ -31,7 +31,7 @@ def abs_to_rel(anchors, outfile, verbose = True):
         outtab = pd.DataFrame(index = intab.index, columns=out_header)
 
         if verbose:
-            print 'Munging {} genomes from Murasaki format to OSFinder format.'.format(len(genomes))
+            print('Munging {} genomes from Murasaki format to OSFinder format.'.format(len(genomes)))
 
         for genome in genomes:
             genome_positions = sorted(get_absolute_positions(genome).values())
@@ -73,12 +73,12 @@ def abs_to_rel(anchors, outfile, verbose = True):
             outtab[sign] = intab[sign]
 
             if verbose:
-                print "\tFinished munging " + genome
+                print("\tFinished munging " + genome)
             
         outtab.to_csv(outfile, sep = sep, header = False, index = False)
-        print 'OSFinder format written to {}.'.format(outfile)
+        print('OSFinder format written to {}.'.format(outfile))
     else:
-        print 'OSFinder input found at {}: using existing file.'.format(outfile)
+        print('OSFinder input found at {}: using existing file.'.format(outfile))
 
     return outfile
 
@@ -112,7 +112,7 @@ def osfinder_pairwise(anchors, outprefix, min_len = 1000):
         command = 'osfinder -i {} -o {} -n 2 -s {}'.format(anchors, outprefix, min_len)
         sp.Popen(command, shell=True).wait()
     else:
-        print 'OSFinder output already present at {}: using existing file.'.format(segments)
+        print('OSFinder output already present at {}: using existing file.'.format(segments))
     return segments
 
 def osfinder_to_grimm(osfinder_results, genome_file, outfile, genome_abbreviations):
@@ -136,7 +136,7 @@ def osfinder_to_grimm(osfinder_results, genome_file, outfile, genome_abbreviatio
             grimm_genomes[genome].append(str(eval(segment[sign]+str(i+1)))) # i+1 because GRIMM cannot start from 0
 
     outfh = open(outfile, 'w')
-    for genome, segs in grimm_genomes.items():
+    for genome, segs in list(grimm_genomes.items()):
         outfh.write(' '.join(['>', genome_abbreviations[genome], '\n']))
         outfh.write(' '.join(segs) + '\n')
         outfh.write('\n')

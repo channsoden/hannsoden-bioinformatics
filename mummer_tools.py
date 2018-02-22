@@ -50,10 +50,10 @@ def parse_mummer_coords(showcoords_output, ref_scaffold_sizes,
     idx = 0
     while line:
         line = line.strip().replace('|','', 6).split()
-        refstart, refend, qstart, qend, refalen, qalen = map(int, line[:6])
+        refstart, refend, qstart, qend, refalen, qalen = list(map(int, line[:6]))
         ID = float(line[6])
-        reflen, qlen = map(int, line[7:9])
-        refcov, qcov = map(float, line[9:11])
+        reflen, qlen = list(map(int, line[7:9]))
+        refcov, qcov = list(map(float, line[9:11]))
         refscaf, qscaf = line[11:]
         idx += 1
         
@@ -111,12 +111,12 @@ def parse_delta(deltafile):
             spLine = line[1:].strip().split()
             if len(spLine) == 4:
                 rSeq, qSeq = spLine[:2]
-                rSeqLen, qSeqLen = map(int, spLine[2:])
+                rSeqLen, qSeqLen = list(map(int, spLine[2:]))
             else:
                 exit('Invalid delta format. There may be white space in sequence names. Check your fasta files to make sure there is no white space used as delimeters.')
         else:
             # This is the start of an alignment
-            rStart, rEnd, qStart, qEnd, errors, simErrors, stops = map(int, line.strip().split())
+            rStart, rEnd, qStart, qEnd, errors, simErrors, stops = list(map(int, line.strip().split()))
 
             delta = []
             while True:

@@ -38,7 +38,7 @@ def minimal(ax, labels=False, ticks=False):
 
     # Turn off ticks
     if not ticks:
-        ax.tick_params(axis=u'both', which=u'both',length=0)
+        ax.tick_params(axis='both', which='both',length=0)
 
     if not labels:
         ax.xaxis.set_visible(False)
@@ -54,7 +54,7 @@ def simple_axis(ax):
     ax.xaxis.set_ticks_position('bottom')
 
 def spine_size(ax, size):
-    [i.set_linewidth(size) for i in ax.spines.itervalues()]
+    [i.set_linewidth(size) for i in ax.spines.values()]
     ax.tick_params(axis='both', which='both', labelsize=size*5)
     
 def scientific(ax, y=True, x=True):

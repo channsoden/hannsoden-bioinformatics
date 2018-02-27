@@ -1,9 +1,9 @@
 #!/usr/bin/env python
 
-#*********TIGER v1.02*************
-__author__ = "Carla Cummins"
+#*********TIGER v2.00*************
+__author__ = ["Carla Cummins", "Christopher Hann-Soden"]
 __credits__ = ["Carla Cummins", "James Mc Inerney", "Christopher Hann-Soden"]
-__version__ = "1.02"
+__version__ = "2.00"
 
 import time, sys, argparse
 starttime = time.time()

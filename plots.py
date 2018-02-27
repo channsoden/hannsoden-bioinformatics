@@ -22,7 +22,25 @@ def box_plot(ax, data, color='black', spacing = 1, offset = 0, sym = 'k+'):
 
     ax.set_xticklabels(categories)
 
-def pretty_bar(ax, data, labels, title=None, shift = 0, barwidth=0.5, barcolor='gray'):
+def pretty_bar(ax, data, labels, title=None, shift = 0, barwidth=0.5,
+               barcolor='gray', horizontal=False):
+    if horizontal:
+        plotter = ax.barh
+        xlim = ax.set_ylim
+        xticks = ax.set_yticks
+        yticks = ax.set_xticks
+        xticklabels = ax.set_yticklabels
+        grid = ax.xaxis.grid
+        rotation = -90
+    else:
+        plotter = ax.bar
+        xlim = ax.set_xlim
+        xticks = ax.set_xticks
+        yticks = ax.set_yticks
+        xticklabels = ax.set_xticklabels
+        grid = ax.yaxis.grid
+        rotation = 0
+
     # Matplotlib assumes you have numerical data for both axes
     # But for the X axis, we have categorical data
     # So we need to plug in a range of numbers to place the bars at
@@ -31,19 +49,17 @@ def pretty_bar(ax, data, labels, title=None, shift = 0, barwidth=0.5, barcolor='
 
     # Bars will appear at 0, 1, 2, etc
     # So set the x-limits to include these values
-    ax.set_xlim(-barwidth, len(data)-barwidth)
+    xlim(-barwidth, len(data)-barwidth)
 
     # Here we turn the bars grey and remove their edge border.
     # Also make the bars a little more narrow.
-    bars = ax.bar(x, data, align='center', color=barcolor, edgecolor='none', width=barwidth)
+    bars = plotter(x, data, barwidth, align='center', color=barcolor, edgecolor='none')
 
     # Set the ticks to match the bars and label them.
     if max([len(l) for l in labels]) > 4:
-        rotation = 90
-    else:
-        rotation = 0
-    ax.set_xticks(x)
-    ax.set_xticklabels(labels, rotation=rotation)
+        rotation += 90
+    xticks(x)
+    xticklabels(labels, rotation=rotation)
 
     # Hide the frame around the plot
     for spine in ax.spines:
@@ -51,7 +67,7 @@ def pretty_bar(ax, data, labels, title=None, shift = 0, barwidth=0.5, barcolor='
     # Turn off the ticks
     ax.tick_params(bottom='off', top='off', left='off', right='off')
     # Overlay a white grid on the y axis
-    ax.yaxis.grid(True, color='white', linestyle='solid')
+    grid(True, color='white', linestyle='solid')
 
     if title:
         ax.set_title(title, fontweight='bold')

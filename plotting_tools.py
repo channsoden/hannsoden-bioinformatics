@@ -131,3 +131,29 @@ def square_grid(nplots):
     columns = math.floor( math.sqrt(nplots) )
     rows = math.ceil(nplots / columns)
     return int(columns), int(rows)
+
+def direct_labels(ax, X, Y, altlabels=None, horizontal = False, num_format='', center_line = 0):
+    # Add direct labels to bar plots
+    # (or other plots, but this shifts the labels to align against the middle).
+    if not altlabels:
+        altlabels = Y
+    if horizontal:
+        ax.set_xticklabels([])
+    else:
+        ax.set_yticklabels([])
+    for xpos, ypos, label in zip(X, Y, altlabels):
+        dlabel = ('{'+num_format+'}').format(label)
+        if horizontal:
+            xpos, ypos = ypos, xpos
+            va='center'
+            if xpos < center_line:
+                ha='right'
+            else:
+                ha='left'
+        else:
+            ha='center'
+            if ypos < center_line:
+                va='top'
+            else:
+                va='bottom'
+        ax.text(xpos, ypos, dlabel, ha=ha, va=va)

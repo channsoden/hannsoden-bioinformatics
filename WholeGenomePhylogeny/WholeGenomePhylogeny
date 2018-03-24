@@ -68,7 +68,7 @@ def parse_arguments():
     elif not args.genomes and args.dataset:
         try:
             import genome_datasets
-            args.genomes = eval('genome_datasets.'+args.dataset).values()
+            args.genomes = list(eval('genome_datasets.'+args.dataset).values())
         except ImportError:
             raise ImportError('genome_datasets.py was not found in your PYTHONPATH')
         except AttributeError:
@@ -85,12 +85,12 @@ def main(args):
         pickle.dump(args, fh)
 
     if args.step == 1:
-        print 'Began orthology search'
+        print('Began orthology search')
         seg_files = orthology(args)
         if not seg_files:
             # Orthology search must have failed
             return None
-        print 'Finished orthology search'
+        print('Finished orthology search')
         try:
             os.remove('1_orthology/'+args.output+'.uni_shared_ref.pickle')
         except OSError:
@@ -99,24 +99,24 @@ def main(args):
         args.step += 1
 
     if args.step == 2:
-        print 'Began multiple alignment'
+        print('Began multiple alignment')
         alignment = multiple_alignment(args, seg_files)
-        print 'Finished multiple alignment'
+        print('Finished multiple alignment')
         args.step += 1
 
     if args.step == 3:
-        print 'Began partitioning'
+        print('Began partitioning')
         partition_file, phylip = partition(args, alignment)
-        print 'Finished partitioning'
+        print('Finished partitioning')
         args.step += 1
 
     if args.step == 4:
-        print 'Began ML tree optimization'
+        print('Began ML tree optimization')
         tree = phylogeny(args, partition_file, phylip)
-        print 'Finished ML tree optimization'
+        print('Finished ML tree optimization')
         args.step += 1
 
-    print 'Completed whole genome phylogenetic analysis.'
+    print('Completed whole genome phylogenetic analysis.')
     os.remove(args.output+'.args.pickle')
     return tree
 

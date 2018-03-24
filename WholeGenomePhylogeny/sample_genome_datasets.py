@@ -14,17 +14,17 @@ datasets.
 import re
 def subgroup_shortname(regex, d):
     """Returns a dictionary composed of elements whose keys (short names) contain the regex."""
-    grp = {k:v for k,v in d.items() if re.search(regex, k)}
+    grp = {k:v for k,v in list(d.items()) if re.search(regex, k)}
     return grp
 def subgroup_longname(regex, d):
     """Returns a dictionary composed of elements whose values (long names) contain the regex."""
-    grp = {k:v for k,v in d.items() if re.search(regex, v)}
+    grp = {k:v for k,v in list(d.items()) if re.search(regex, v)}
     return grp
 
 def merge_dicts(d1, d2):
     """Returns a dictionary composed of elements from both d1 and d2."""
-    new = {k:v for k, v in d1.items()}
-    for k, v in d2.items():
+    new = {k:v for k, v in list(d1.items())}
+    for k, v in list(d2.items()):
         new[k] = v
     return new
 

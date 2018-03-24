@@ -67,7 +67,7 @@ def runmummer(args):
             pass
 
         jobs = [(nucmer, [args.reference]+absence) for absence in absent]
-        esttime = '{}:0:0'.format(4 * (len(jobs) / cfg.SLURMcpus + 1)) # estimate 4 hours per query
+        esttime = '{}:0:0'.format(int(4 * (len(jobs) / cfg.SLURMcpus + 1))) # estimate 4 hours per query
         ID = submit(jobs,
                     pool=True,
                     partition = cfg.SLURMpartition,
@@ -83,7 +83,7 @@ def runmummer(args):
         # all alignments should now exist
         existing.extend(absent)
 
-    queries, prefixes, deltafiles, tempfiles, filterfiles = zip(*existing)
+    queries, prefixes, deltafiles, tempfiles, filterfiles = list(zip(*existing))
 
     os.chdir(basedir)
     return filterfiles
@@ -139,26 +139,26 @@ def find_ortho(args):
     # Get the names of the delta files
     existing, absent = find_mummer_files(args)
     if absent:
-        queries, prefixes, delta_files, temp_files, filter_files = zip(*absent)
+        queries, prefixes, delta_files, temp_files, filter_files = list(zip(*absent))
         message = 'The following delta files could not be found/accessed: {}'
         raise Exception(message.format(filter_files))
     else:
-        queries, prefixes, delta_files, temp_files, filter_files = zip(*existing)
+        queries, prefixes, delta_files, temp_files, filter_files = list(zip(*existing))
 
-    print 'Finding segments of the reference that have orthologous sequences in all queries (uni_shared_ref). . .'
+    print('Finding segments of the reference that have orthologous sequences in all queries (uni_shared_ref). . .')
     # uni_shared_ref = {ref_scaf: [(start, end), (start, end), . . .], ref_scaf: [. . .], . . .}
     ref_lens = fasta_tools.get_scaffold_lengths(args.reference)
     # Make a list of endpoints of orthologous segments for each ref scaffold.
     # The queries of endpoints are not differentiated, only starts and ends (negative).
     # endpoints = [refstart, -refend, refstart, refstart, -refend, . . .]
-    endpoints = {key: [1, -value] for key, value in ref_lens.items()}
+    endpoints = {key.split()[0]: [1, -value] for key, value in list(ref_lens.items())}
     for df in filter_files:
         endpoints = merge_endpoints(endpoints, get_endpoints(df))
     # Sort endpoints, find segments where coverage == # of queries
     uni_shared_ref = full_coverage(endpoints, len(filter_files)+1)
 
     num_segs, mean_size, total_orth = seg_stats(uni_shared_ref)
-    print 'Found {} orthologous segments totalling {} bp (mean {} bp).'.format(num_segs, total_orth, mean_size)
+    print('Found {} orthologous segments totalling {} bp (mean {} bp).'.format(num_segs, total_orth, mean_size))
     if not num_segs:
         sys.exit('Aborting whole genome phylogeny: no orthologous segments found.')
     elif total_orth < 10000:
@@ -168,7 +168,7 @@ def find_ortho(args):
     else:
         pass
 
-    print 'Extracting and writing orthologous segments. . .'
+    print('Extracting and writing orthologous segments. . .')
     # Go back to the alignment files, and for each uni segment use the alignments to write a fasta file
     # containing the orthologous segments from each genome.
     extract_orthologous_sequence(args.reference, filter_files, uni_shared_ref)
@@ -182,7 +182,7 @@ def find_ortho(args):
     os.chdir(basedir)
 
 def merge_endpoints(endpointsA, endpointsB):
-    for scaf, ends in endpointsB.items():
+    for scaf, ends in list(endpointsB.items()):
         try:
             endpointsA[scaf].extend(ends)
         except KeyError:
@@ -207,7 +207,7 @@ def get_endpoints(df):
 
 def full_coverage(endpoints, max_coverage):
     segments = {}
-    for scaf, ends in endpoints.items():
+    for scaf, ends in list(endpoints.items()):
         ends.sort(key=abs)
         covered = 0
         segments[scaf] = []
@@ -217,7 +217,7 @@ def full_coverage(endpoints, max_coverage):
                 segments[scaf].append((end, abs(ends[i+1])))
                 
     # filter to segments that are longer than 60 bp
-    for scaf, coords in segments.items():
+    for scaf, coords in list(segments.items()):
         segments[scaf] = [coord for coord in coords if coord[1] - coord[0] >= 60]
 
     return segments
@@ -233,7 +233,7 @@ def extract_orthologous_sequence(reference, delta_files, uni_shared_ref):
     
     # Write the reference segments to files
     ref = fasta_to_dict(reference)
-    for scaf, seglist in uni_shared_ref.items():
+    for scaf, seglist in list(uni_shared_ref.items()):
         for segStart, segEnd in seglist:
             segID = template.format(scaf, segStart, segEnd)
             faFH = open(args.output+'.shared_alignment/{}.{}.fa'.format(args.output, segID), 'w')
@@ -337,10 +337,10 @@ def merge_records(rec, qerFile, qStart, qEnd, faFile, tStart, tEnd, seq, aln, te
         recQer, sub_qSegs = sub_qSegs.split(':')
         if recQer == qerFile:
             # parse the record description of previously written sub-segments
-            sub_rScafs, sub_rSegs = map(list, zip(*[ss.split('_') for ss in sub_rSegs.split('|')]))
-            sub_rSegs = [map(int, ss.split('-')) for ss in sub_rSegs]
-            sub_qScafs, sub_qSegs = map(list, zip(*[ss.split('_') for ss in sub_qSegs.split('|')]))
-            sub_qSegs = [map(int, ss.split('-')) for ss in sub_qSegs]
+            sub_rScafs, sub_rSegs = list(map(list, list(zip(*[ss.split('_') for ss in sub_rSegs.split('|')]))))
+            sub_rSegs = [list(map(int, ss.split('-'))) for ss in sub_rSegs]
+            sub_qScafs, sub_qSegs = list(map(list, list(zip(*[ss.split('_') for ss in sub_qSegs.split('|')]))))
+            sub_qSegs = [list(map(int, ss.split('-'))) for ss in sub_qSegs]
             i = bisect_right(sub_rSegs, [tStart, tEnd])
             
             # insert the sequence in the right place in recB
@@ -364,7 +364,7 @@ def merge_records(rec, qerFile, qStart, qEnd, faFile, tStart, tEnd, seq, aln, te
     return records
 
 def seg_stats(seg_list):
-    lengths = [end-(start-1) for scaf_list in seg_list.values() for start, end in scaf_list]
+    lengths = [end-(start-1) for scaf_list in list(seg_list.values()) for start, end in scaf_list]
     n = len(lengths)
     if not n:
         return 0, 0, 0

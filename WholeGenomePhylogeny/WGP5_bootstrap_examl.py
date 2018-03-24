@@ -38,7 +38,7 @@ def range_args(args, reps):
 
 def sample(alignment, reps):
     records = fasta_to_dict(alignment)
-    names, seqs = zip(*records.items())
+    names, seqs = list(zip(*list(records.items())))
     aln = np.array([list(seq) for seq in seqs])
     M = aln.shape[1]
 
@@ -83,10 +83,10 @@ def map_support(tree_file, bs_tree_files):
 
     for n in nodes:
         n.support = 0
-    for bp, s in support.items():
+    for bp, s in list(support.items()):
         idx = descendants.index(bp)
         nodes[idx].support += s
-    for bp, s in mirror_support.items():
+    for bp, s in list(mirror_support.items()):
         idx = mirrors.index(bp)
         nodes[idx].support += s
 

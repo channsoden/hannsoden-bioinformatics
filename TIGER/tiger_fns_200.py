@@ -36,9 +36,9 @@ class char_set(object):
 
         self.standard = {chr(i):chr(i) for i in range(256)}
 
-        self.dna = {k:v+unknowns for k,v in self.dna.items()}
-        self.protein = {k:v+unknowns for k,v in self.protein.items()}
-        self.standard = {k:v+unknowns for k,v in self.standard.items()}
+        self.dna = {k:v+unknowns for k,v in list(self.dna.items())}
+        self.protein = {k:v+unknowns for k,v in list(self.protein.items())}
+        self.standard = {k:v+unknowns for k,v in list(self.standard.items())}
 
         self.name = alphabet
         self.alphabet = eval('self.'+alphabet)
@@ -60,7 +60,7 @@ def set_bitsize(n):
 
 def report(message):
     now = time.localtime()
-    print '{}:{}:{} - {}'.format(now.tm_hour, now.tm_min, now.tm_sec, message)
+    print('{}:{}:{} - {}'.format(now.tm_hour, now.tm_min, now.tm_sec, message))
     
 def partition_sites(seqs, args):
     sites = [[s[i] for s in seqs] for i in range(len(seqs[0]))]
@@ -250,6 +250,6 @@ def histogram(num_list, name_list):
                 pr = pr + "="*(p+1) + (" "*(60 - p))
                 break
             low = hi
-        print "[" + pr + "|" + str(n) + " "*(pad-len(str(n))) + "]"
+        print("[" + pr + "|" + str(n) + " "*(pad-len(str(n))) + "]")
 
 

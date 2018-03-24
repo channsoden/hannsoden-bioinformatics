@@ -78,7 +78,8 @@ def submit(job,
         script.append('mapPool({}, {}, daemonic=True)'.format(cpus_per_task, job))
 
         temp_script = tempfile.NamedTemporaryFile(prefix = job_name+'_pool', dir='.', delete=False)
-        temp_script.writelines(script)
+        for line in script:
+            temp_script.write(line.encode())
         temp_script.close()
         job = '{} {}'.format(this_python, temp_script.name)
 
@@ -86,7 +87,9 @@ def submit(job,
                           stdout=sp.PIPE, stderr=sp.PIPE, stdin=sp.PIPE)
     job = '#!/bin/{}\n{}{}'.format(shell, mod_string, job)
 
-    out, err = submission.communicate(input = job)
+    out, err = submission.communicate(input = job.encode())
+    out = out.decode()
+    err = err.decode()
     if err:
         sys.exit(err)
     else:
@@ -103,12 +106,15 @@ def submit_script(job):
         sys.exit(err)
     else:
         jobID = out.strip().split()[-1]
-        return jobID
+        return jobID.decode()
 
 def check_job(jobID):
     check = sp.Popen('sacct --format End -j {}'.format(jobID), shell=True,
                      stdout=sp.PIPE, stderr=sp.PIPE)
     out, err = check.communicate()
+    if err:
+        sys.exit(err)
+    out = out.decode()
     endtime = out.split('\n')[2].strip()
     if endtime:
         finished = endtime != 'Unknown'

@@ -27,7 +27,7 @@ def multiple_alignment(args, fastas):
             unaligned_fastas = [fasta for fasta in fastas if not os.path.isfile(trim_name(fasta))]
 
         if unaligned_fastas:
-            chunk_size = (len(unaligned_fastas) / 4) + 1
+            chunk_size = int(len(unaligned_fastas) / 4) + 1
             chunks = [unaligned_fastas[i:i+chunk_size] for i in [n * chunk_size for n in range(4)]]
             # Run this script with list of fastas as args
             jobs = [(submit_alignment_batch, ['{} {} {}'.format(sys.executable, __file__, ' '.join(chunk))])
@@ -98,7 +98,7 @@ def find_start(boolArray):
     upper = len(boolArray.columns)
     lower = 0
     while upper - lower > 1:
-        i = (upper + lower) / 2
+        i = int((upper + lower) / 2)
         if has_started(boolArray, i):
             upper = i
         else:
@@ -109,7 +109,7 @@ def find_end(boolArray):
     upper = len(boolArray.columns)
     lower = 0
     while upper - lower > 1:
-        i = (upper + lower) / 2
+        i = int((upper + lower) / 2)
         if has_ended(boolArray, i):
             upper = i
         else:
@@ -141,7 +141,7 @@ def concatenate_fasta(faAlignments, outfile):
         try:
             seqs = fasta_tools.fasta_to_dict(fa)
             [concatenated[name.split()[-1].split(':')[0]].append(seq)
-             for name, seq in seqs.items()]
+             for name, seq in list(seqs.items())]
         except fasta_tools.ParserError:
             bad_files += 1    
 
@@ -149,10 +149,10 @@ def concatenate_fasta(faAlignments, outfile):
         sys.stderr.write( 'Skipping {} empty or malformed alignment files\n'.format(bad_files) )
     
     # Abbreviate thxe sequence names and join all the sequences into a single long string.
-    concatenated = {shorten_name(name): ''.join(seqs) for name, seqs in concatenated.items()}
+    concatenated = {shorten_name(name): ''.join(seqs) for name, seqs in list(concatenated.items())}
 
     fh = open(outfile, 'w')
-    for name, seq in concatenated.items():
+    for name, seq in list(concatenated.items()):
         fh.write('>'+name+'\n')
         [fh.write(seq[i:i+80]+'\n') for i in range(0, len(seq), 80)]
     fh.close()

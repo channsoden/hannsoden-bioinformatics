@@ -34,10 +34,10 @@ def submit_tiger2(args, alignment):
     # patterns there will be in an alignment of a given size.
     pps = 0.1 # empirical guess of high patterns per site # 0.05 for most, 0.1 for extremely diverse clade N. rajui
     records = len(args.genomes)
-    sites = total_length(alignment) / records
+    sites = int(total_length(alignment) / records)
     estimated_patterns = pps * sites
     estimated_runtime = int(estimated_patterns * 0.5)
-    minutes = (estimated_runtime / 60) +1
+    minutes = int(estimated_runtime / 60) +1
     if minutes > (cfg.LARGEmaxtime * 60):
         warning = "Warning: estimated partition time ({}) is greater than maximum wallclock time ({}).\n"
         warning = warning.format(minutes, cfg.LARGEmaxtime * 60)

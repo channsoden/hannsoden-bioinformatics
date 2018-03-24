@@ -95,7 +95,7 @@ def parse_args():
     args = parser.parse_args()
 
     if args.version:
-        print "TIGER version {}".format(__version__)
+        print("TIGER version {}".format(__version__))
         sys.exit(0)
     
     try:
@@ -119,7 +119,7 @@ if __name__ == '__main__':
     
     report('parsing fasta. . .')
     alignment = fasta_to_dict(args.input)
-    names, seqs = zip(*alignment.items())
+    names, seqs = list(zip(*list(alignment.items())))
     report('done parsing')
 
     lns = set([len(s) for s in seqs])
@@ -195,9 +195,9 @@ if __name__ == '__main__':
 
     endtime = time.time()
     complete = int(endtime - starttime)
-    hours = complete / 3600
-    minutes = (complete % 3600) / 60
+    hours = int(complete / 3600)
+    minutes = int((complete % 3600) / 60)
     seconds = complete % 60
-    print 'Finished in {}h {}m {}s'.format(hours, minutes, seconds)
+    print('Finished in {}h {}m {}s'.format(hours, minutes, seconds))
         
     sys.exit()

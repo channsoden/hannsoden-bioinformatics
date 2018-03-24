@@ -200,3 +200,7 @@ def map_coverage(coords, genome_length, perspective=''):
         pos += 1
     
     return cov_map
+
+def reference_coverage(deltafile):
+    rlens = [a.rLen for a in parse_delta(deltafile)]
+    return sum(rlens)

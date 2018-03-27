@@ -13,7 +13,7 @@ def murasaki_pairwise(pair, outdir, outprefix, weight = 28, length = 36):
     anchors = '{}/{}.anchors'.format(outdir, outprefix)
     if not os.path.isfile(anchors):
         genomes = ' '.join(list(pair.values()))
-        command = "mpirun -np 1 murasaki -p[{}:{}] -d {} -n {} -H2 {}".format(weight, length, outdir, outprefix, genomes)
+        command = "murasaki -p[{}:{}] -d {} -n {} -H2 {}".format(weight, length, outdir, outprefix, genomes)
         # if it's taking forever try -m [int] to skip hashes that appear [int] times
         sp.Popen(command, shell=True).wait()
     else:

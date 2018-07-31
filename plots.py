@@ -147,14 +147,15 @@ class regression_plot(object):
              marker_alpha=0.3,
              plot_regression=True):
 
-        if logx:
-            X = np.log10(self.x)
-        else:
-            X = self.x
-        if logy:
-            Y = np.log10(self.y)
-        else:
-            Y = self.y
+        with np.errstate(divide='ignore'):
+            if logx:
+                X = np.log10(self.x)
+            else:
+                X = self.x
+            if logy:
+                Y = np.log10(self.y)
+            else:
+                Y = self.y
 
         ax.scatter(X, Y,  c='k', alpha = marker_alpha, edgecolors='none')
 
@@ -173,10 +174,11 @@ class regression_plot(object):
             
             regressx = np.linspace(self.x.min(), self.x.max(), num=100)
             prediction = regressx * self.slope + self.intercept
-            if logx:
-                regressx = np.log10(regressx)
-            if logy:
-                prediction = np.log10(prediction)
+            with np.errstate(divide='ignore'):
+                if logx:
+                    regressx = np.log10(regressx)
+                if logy:
+                    prediction = np.log10(prediction)
             ax.plot(regressx, prediction, line)
             if fit_report_location:
                 fit_report = 'R2 = {:.4f}\np = {:.3E}'.format(self.r2, self.p_val)

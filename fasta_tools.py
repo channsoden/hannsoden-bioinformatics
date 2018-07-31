@@ -9,13 +9,15 @@ def get_absolute_positions(fastafile, base=0):
     of each sequence if they were concatenated together in order.
     Uses 0-based indexing by default."""
     from Bio import SeqIO
-    records = SeqIO.parse(open(fastafile, 'r'), 'fasta')
+    fh = open(fastafile, 'r')
+    records = SeqIO.parse(fh, 'fasta')
     d = {}
     genomelength = base
     for rec in records:
         d[rec.name] = genomelength
         genomelength += len(rec.seq)
     d['end'] = genomelength
+    fh.close()
     return d
 
 def get_scaffold_lengths(fastafile):
@@ -32,6 +34,7 @@ def seq_length_list(fastafile):
     pairs = [seq.split('\n', 1) for seq in seqs]
     lengths = [len(pair[1].replace('\n', '')) for pair in pairs]
 
+    data.close()
     return lengths
 
 def total_length(fastafile):
@@ -53,6 +56,7 @@ def fasta_to_dict(fastafile):
     except IndexError:
         raise ParserError('Empty or malformed sequences in {}'.format(fastafile))
 
+    data.close()
     return genes
 
 def wrap_fasta(fasta_file, out_file = '', N = 80):
@@ -71,6 +75,9 @@ def wrap_fasta(fasta_file, out_file = '', N = 80):
             for i in range(0, len(line), N):
                 out.write(line[i: i+N])
                 out.write('\n')
+
+    fh.close()
+    out.close()
 
 def fasta_to_phylip(fastafile):
     # Bio.AlignIO.write puts spaces in the sequence blocks that break some tools.

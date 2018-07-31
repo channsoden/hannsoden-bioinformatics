@@ -13,10 +13,10 @@ brewer = ['#8dd3c7', '#ffffb3', '#bebada', '#fb8072',
           '#d9d9d9', '#bc80bd', '#ccebc5', '#ffed6f']
 brewer_colorblind = ['#1f78b4', '#33a02c', '#a6cee3', '#b2df8a']
 
-gioti = {'red': '#EF2636',
-         'blue': '#3972C2',
+gioti = {'red': '#EF2636', # 239, 38, 54
+         'blue': '#3972C2', # 57, 114, 194
          'green': '#2CE16C',
-         'purple': '#944C7D'}
+         'purple': '#944C7D'} # 148, 76, 125
 
 # 26 colors from "A Colour Alphabet and the Limits of Colour Coding"
 # https://eleanormaclure.files.wordpress.com/2011/03/colour-coding.pdf

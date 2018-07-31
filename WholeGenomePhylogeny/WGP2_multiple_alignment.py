@@ -51,13 +51,13 @@ def multiple_alignment(args, fastas):
 
 def submit_alignment_batch(job):
     ID = submit(job,
-                partition = cfg.SLURMpartition,
-                account = cfg.SLURMaccount,
-                qos = cfg.SLURMqos,
-                time = '12:0:0',
+                partition = cfg.LARGEpartition,
+                account = cfg.LARGEaccount,
+                qos = cfg.LARGEqos,
+                time = '36:0:0',
                 job_name = 'mafft',
-                cpus_per_task = cfg.SLURMcpus,
-                mem_per_cpu = cfg.SLURMmem,
+                cpus_per_task = cfg.LARGEcpus,
+                mem_per_cpu = cfg.LARGEmem,
                 modules = cfg.modules)
     job_wait(ID)
     return ID

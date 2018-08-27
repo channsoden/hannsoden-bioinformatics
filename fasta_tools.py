@@ -47,7 +47,8 @@ def total_length(fastafile):
 
 def fasta_to_dict(fastafile):
     """Very fast, but memory inefficient, function to return a dictionary of all sequences in the fasta file."""
-    data = open(fastafile, 'r').read()
+    fh = open(fastafile, 'r')
+    data = fh.read()
 
     genes = data[1:].split('>')
     genes = [gene.split('\n', 1) for gene in genes]
@@ -56,7 +57,7 @@ def fasta_to_dict(fastafile):
     except IndexError:
         raise ParserError('Empty or malformed sequences in {}'.format(fastafile))
 
-    data.close()
+    fh.close()
     return genes
 
 def wrap_fasta(fasta_file, out_file = '', N = 80):
